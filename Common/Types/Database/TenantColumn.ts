@@ -1,5 +1,7 @@
+import GenericFunction from "../GenericFunction";
+
 export default (columnName: string) => {
-    return (ctr: Function) => {
-        ctr.prototype.tenantColumn = columnName;
-    };
+  return (ctr: GenericFunction) => {
+    ctr.prototype.tenantColumn = columnName;
+  };
 };

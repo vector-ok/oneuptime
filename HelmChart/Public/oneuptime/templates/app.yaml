@@ -1,0 +1,120 @@
+# OneUptime app Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-%s" $.Release.Name "app"  }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: {{ printf "%s-%s" $.Release.Name "app"  }}
+    app.kubernetes.io/part-of: oneuptime
+    app.kubernetes.io/managed-by: Helm
+    appname: oneuptime
+    date: "{{ now | unixEpoch }}"
+spec:
+  selector:
+    matchLabels:
+      app: {{ printf "%s-%s" $.Release.Name "app"  }}
+  replicas: {{ $.Values.deployment.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ printf "%s-%s" $.Release.Name "app"  }}
+        date: "{{ now | unixEpoch }}"
+        appname: oneuptime
+    spec:
+      {{- if $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $.Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if $.Values.podSecurityContext }}
+      securityContext: {{- $.Values.podSecurityContext | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if $.Values.affinity }}
+      affinity: {{- $.Values.affinity | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if $.Values.tolerations }}
+      tolerations: {{- $.Values.tolerations | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if $.Values.nodeSelector }}
+      nodeSelector: {{- $.Values.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      containers:
+        - image: {{ printf "%s/%s/%s:%s" $.Values.image.registry $.Values.image.repository "app" $.Values.image.tag }}
+          name: {{ printf "%s-%s" $.Release.Name "app"  }}
+          # Liveness probe
+          {{- if $.Values.startupProbe.enabled }}
+          # Startup probe
+          startupProbe:
+            httpGet:
+              path: /status/live
+              port: {{ $.Values.port.app }}
+            periodSeconds: {{ $.Values.startupProbe.periodSeconds }}
+            failureThreshold: {{ $.Values.startupProbe.failureThreshold }}
+          {{- end }}
+          {{- if $.Values.livenessProbe.enabled }}
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /status/live
+              port: {{ $.Values.port.app }}
+            periodSeconds: {{ $.Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ $.Values.livenessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ $.Values.livenessProbe.initialDelaySeconds }}
+          {{- end }}
+          {{- if $.Values.readinessProbe.enabled }}
+          # Readyness Probe
+          readinessProbe:
+            httpGet:
+              path: /status/ready
+              port: {{ $.Values.port.app }}
+            periodSeconds: {{ $.Values.readinessProbe.periodSeconds }}
+            initialDelaySeconds: {{ $.Values.readinessProbe.initialDelaySeconds }}
+            timeoutSeconds: {{ $.Values.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if $.Values.containerSecurityContext }}
+          securityContext: {{- $.Values.containerSecurityContext | toYaml | nindent 12 }}
+          {{- end }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+            {{- include "oneuptime.env.common" . | nindent 12 }}
+            {{- include "oneuptime.env.commonServer" . | nindent 12 }}
+            {{- include "oneuptime.env.oneuptimeSecret" . | nindent 12 }}
+            - name: OPENTELEMETRY_EXPORTER_OTLP_HEADERS
+              value: {{ $.Values.openTelemetryExporter.headers }}
+            - name: PORT
+              value: {{ $.Values.port.app | quote }}
+            - name: SMS_HIGH_RISK_COST_IN_CENTS
+              value: {{ $.Values.billing.smsHighRiskValueInCents | quote }}
+            - name: CALL_HIGH_RISK_COST_IN_CENTS_PER_MINUTE
+              value: {{ $.Values.billing.callHighRiskValueInCentsPerMinute | quote }}
+            - name: SMS_DEFAULT_COST_IN_CENTS
+              value: {{ $.Values.billing.smsDefaultValueInCents | quote }}
+            - name: CALL_DEFAULT_COST_IN_CENTS_PER_MINUTE
+              value: {{ $.Values.billing.callDefaultValueInCentsPerMinute | quote }}
+            - name: INTERNAL_SMTP_HOST
+              value: {{ printf "%s-haraka.%s.svc.%s" $.Release.Name $.Release.Namespace $.Values.global.clusterDomain | quote }}
+            - name: INTERNAL_SMTP_FROM_NAME
+              value: {{ $.Values.internalSmtp.name | quote }}
+            - name: INTERNAL_SMTP_EMAIL
+              value: {{ $.Values.internalSmtp.email | quote }}
+            - name: INTERNAL_SMTP_PASSWORD
+              value: "internal_smtp_password"  
+        
+          ports:
+            - containerPort: {{ $.Values.port.app }}
+              protocol: TCP
+              name: http
+      restartPolicy: {{ $.Values.image.restartPolicy }}
+
+---
+
+# OneUptime app Service
+{{- $appPorts := dict "port" $.Values.port.app -}}
+{{- $appServiceArgs := dict "ServiceName" "app" "Ports" $appPorts "Release" $.Release "Values" $.Values -}}
+{{- include "oneuptime.service" $appServiceArgs }}
+---
+
+# OneUptime app autoscaler
+{{- $appAutoScalerArgs := dict "ServiceName" "app" "Release" $.Release "Values" $.Values -}}
+{{- include "oneuptime.autoscaler" $appAutoScalerArgs }}
+---

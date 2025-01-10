@@ -1,7 +1,7 @@
 enum ApplicationLogType {
-    Info = 'Info',
-    Erorr = 'Error',
-    Warning = 'Warning',
+  Info = "Info",
+  Error = "Error",
+  Warning = "Warning",
 }
 
 export default ApplicationLogType;

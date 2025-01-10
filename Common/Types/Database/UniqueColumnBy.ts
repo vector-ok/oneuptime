@@ -1,36 +1,49 @@
-import 'reflect-metadata';
-import BaseModel from '../../Models/BaseModel';
-import Dictionary from '../Dictionary';
-import { ReflectionMetadataType } from '../Reflection';
+import BaseModel from "../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import Dictionary from "../Dictionary";
+import { ReflectionMetadataType } from "../Reflection";
+import "reflect-metadata";
 
-const uniqueColumnBy: Symbol = Symbol('UniqueColumnBy');
+const uniqueColumnBy: symbol = Symbol("UniqueColumnBy");
 
-export default (columnName: string): ReflectionMetadataType => {
-    return Reflect.metadata(uniqueColumnBy, columnName);
+export default (columnName: string | Array<string>): ReflectionMetadataType => {
+  return Reflect.metadata(uniqueColumnBy, columnName);
 };
 
-export const getUniqueColumnBy: Function = <T extends BaseModel>(
-    target: T,
-    propertyKey: string
+type GetUniqueColumnByFunction = <T extends BaseModel>(
+  target: T,
+  propertyKey: string,
+) => string;
+
+export const getUniqueColumnBy: GetUniqueColumnByFunction = <
+  T extends BaseModel,
+>(
+  target: T,
+  propertyKey: string,
 ): string => {
-    return Reflect.getMetadata(uniqueColumnBy, target, propertyKey) as string;
+  return Reflect.getMetadata(uniqueColumnBy, target, propertyKey) as string;
 };
 
-export const getUniqueColumnsBy: Function = <T extends BaseModel>(
-    target: T
+type GetUniqueColumnsByFunction = <T extends BaseModel>(
+  target: T,
+) => Dictionary<string>;
+
+export const getUniqueColumnsBy: GetUniqueColumnsByFunction = <
+  T extends BaseModel,
+>(
+  target: T,
 ): Dictionary<string> => {
-    const dictonary: Dictionary<string> = {};
-    const keys: Array<string> = Object.keys(target);
+  const dictonary: Dictionary<string> = {};
+  const keys: Array<string> = Object.keys(target);
 
-    for (const key of keys) {
-        if (Reflect.getMetadata(uniqueColumnBy, target, key)) {
-            dictonary[key] = Reflect.getMetadata(
-                uniqueColumnBy,
-                target,
-                key
-            ) as string;
-        }
+  for (const key of keys) {
+    if (Reflect.getMetadata(uniqueColumnBy, target, key)) {
+      dictonary[key] = Reflect.getMetadata(
+        uniqueColumnBy,
+        target,
+        key,
+      ) as string;
     }
+  }
 
-    return dictonary;
+  return dictonary;
 };

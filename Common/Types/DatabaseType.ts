@@ -1,5 +1,6 @@
 enum DatabaseType {
-    Postgres = 'postgres',
+  Postgres = "postgres",
+  Clickhouse = "clickhouse",
 }
 
 export default DatabaseType;

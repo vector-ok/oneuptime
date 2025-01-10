@@ -1,5 +1,7 @@
+import GenericFunction from "../GenericFunction";
+
 export default (allowed: boolean) => {
-    return (ctr: Function) => {
-        ctr.prototype.allowUserQueryWithoutTenant = allowed;
-    };
+  return (ctr: GenericFunction) => {
+    ctr.prototype.allowUserQueryWithoutTenant = allowed;
+  };
 };

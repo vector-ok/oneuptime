@@ -1,158 +1,280 @@
-import Route from 'Common/Types/API/Route';
-import Page from 'CommonUI/src/Components/Page/Page';
-import React, { FunctionComponent, ReactElement } from 'react';
-import PageMap from '../../../Utils/PageMap';
-import RouteMap, { RouteUtil } from '../../../Utils/RouteMap';
-import PageComponentProps from '../../PageComponentProps';
-import SideMenu from './SideMenu';
-import Navigation from 'CommonUI/src/Utils/Navigation';
-import ObjectID from 'Common/Types/ObjectID';
-import ModelTable from 'CommonUI/src/Components/ModelTable/ModelTable';
-import IncidentStateTimeline from 'Model/Models/IncidentStateTimeline';
-import { IconProp } from 'CommonUI/src/Components/Icon/Icon';
-import BadDataException from 'Common/Types/Exception/BadDataException';
-import FormFieldSchemaType from 'CommonUI/src/Components/Forms/Types/FormFieldSchemaType';
-import IncidentState from 'Model/Models/IncidentState';
-import FieldType from 'CommonUI/src/Components/Types/FieldType';
-import { JSONObject } from 'Common/Types/JSON';
-import Color from 'Common/Types/Color';
-import Pill from 'CommonUI/src/Components/Pill/Pill';
+import DashboardNavigation from "../../../Utils/Navigation";
+import PageComponentProps from "../../PageComponentProps";
+import Color from "Common/Types/Color";
+import OneUptimeDate from "Common/Types/Date";
+import BadDataException from "Common/Types/Exception/BadDataException";
+import IconProp from "Common/Types/Icon/IconProp";
+import ObjectID from "Common/Types/ObjectID";
+import { ButtonStyleType } from "Common/UI/Components/Button/Button";
+import FormFieldSchemaType from "Common/UI/Components/Forms/Types/FormFieldSchemaType";
+import MarkdownViewer from "Common/UI/Components/Markdown.tsx/MarkdownViewer";
+import ConfirmModal from "Common/UI/Components/Modal/ConfirmModal";
+import Modal, { ModalWidth } from "Common/UI/Components/Modal/Modal";
+import ModelTable from "Common/UI/Components/ModelTable/ModelTable";
+import Pill from "Common/UI/Components/Pill/Pill";
+import SimpleLogViewer from "Common/UI/Components/SimpleLogViewer/SimpleLogViewer";
+import FieldType from "Common/UI/Components/Types/FieldType";
+import Navigation from "Common/UI/Utils/Navigation";
+import IncidentState from "Common/Models/DatabaseModels/IncidentState";
+import IncidentStateTimeline from "Common/Models/DatabaseModels/IncidentStateTimeline";
+import React, {
+  Fragment,
+  FunctionComponent,
+  ReactElement,
+  useState,
+} from "react";
 
-const IncidentDelete: FunctionComponent<PageComponentProps> = (
-    props: PageComponentProps
+const IncidentViewStateTimeline: FunctionComponent<PageComponentProps> = (
+  props: PageComponentProps,
 ): ReactElement => {
-    const modelId: ObjectID = new ObjectID(
-        Navigation.getLastParam(1)?.toString().substring(1) || ''
-    );
+  const modelId: ObjectID = Navigation.getLastParamAsObjectID(1);
+  const [showViewLogsModal, setShowViewLogsModal] = useState<boolean>(false);
+  const [logs, setLogs] = useState<string>("");
 
-    return (
-        <Page
-            title={'Incidents'}
-            breadcrumbLinks={[
-                {
-                    title: 'Project',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.HOME] as Route,
-                        modelId
-                    ),
-                },
-                {
-                    title: 'Incidents',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.INCIDENTS] as Route,
-                        modelId
-                    ),
-                },
-                {
-                    title: 'View Incident',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.INCIDENT_VIEW] as Route,
-                        modelId
-                    ),
-                },
-                {
-                    title: 'Status Timeline',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.INCIDENT_VIEW_STATE_TIMELINE] as Route,
-                        modelId
-                    ),
-                },
-            ]}
-            sideMenu={<SideMenu modelId={modelId} />}
+  const [showRootCause, setShowRootCause] = useState<boolean>(false);
+  const [rootCause, setRootCause] = useState<string>("");
+
+  return (
+    <Fragment>
+      <ModelTable<IncidentStateTimeline>
+        modelType={IncidentStateTimeline}
+        id="table-incident-status-timeline"
+        name="Monitor > State Timeline"
+        isEditable={false}
+        isDeleteable={true}
+        isCreateable={true}
+        isViewable={false}
+        showViewIdButton={true}
+        query={{
+          incidentId: modelId,
+          projectId: DashboardNavigation.getProjectId()!,
+        }}
+        selectMoreFields={{
+          stateChangeLog: true,
+          rootCause: true,
+        }}
+        actionButtons={[
+          {
+            title: "View Cause",
+            buttonStyleType: ButtonStyleType.NORMAL,
+            icon: IconProp.TransparentCube,
+            onClick: async (
+              item: IncidentStateTimeline,
+              onCompleteAction: VoidFunction,
+            ) => {
+              setRootCause(
+                item["rootCause"]
+                  ? item["rootCause"].toString()
+                  : "No root cause identified.",
+              );
+              setShowRootCause(true);
+
+              onCompleteAction();
+            },
+          },
+          {
+            title: "View Logs",
+            buttonStyleType: ButtonStyleType.NORMAL,
+            icon: IconProp.List,
+            onClick: async (
+              item: IncidentStateTimeline,
+              onCompleteAction: VoidFunction,
+            ) => {
+              setLogs(
+                item["stateChangeLog"]
+                  ? JSON.stringify(item["stateChangeLog"], null, 2)
+                  : "No logs for this state event.",
+              );
+              setShowViewLogsModal(true);
+
+              onCompleteAction();
+            },
+          },
+        ]}
+        onBeforeCreate={(
+          item: IncidentStateTimeline,
+        ): Promise<IncidentStateTimeline> => {
+          if (!props.currentProject || !props.currentProject._id) {
+            throw new BadDataException("Project ID cannot be null");
+          }
+          item.incidentId = modelId;
+          item.projectId = new ObjectID(props.currentProject._id);
+          return Promise.resolve(item);
+        }}
+        cardProps={{
+          title: "Status Timeline",
+          description: "Here is the status timeline for this incident",
+        }}
+        noItemsMessage={"No status timeline created for this incident so far."}
+        formFields={[
+          {
+            field: {
+              incidentState: true,
+            },
+            title: "Incident Status",
+            fieldType: FormFieldSchemaType.Dropdown,
+            required: true,
+            placeholder: "Incident Status",
+            dropdownModal: {
+              type: IncidentState,
+              labelField: "name",
+              valueField: "_id",
+            },
+          },
+          {
+            field: {
+              shouldStatusPageSubscribersBeNotified: true,
+            },
+
+            title: "Notify Status Page Subscribers",
+            description: "Should status page subscribers be notified?",
+            fieldType: FormFieldSchemaType.Checkbox,
+            defaultValue: true,
+            required: false,
+          },
+        ]}
+        showRefreshButton={true}
+        viewPageRoute={Navigation.getCurrentRoute()}
+        filters={[
+          {
+            field: {
+              incidentState: {
+                name: true,
+              },
+            },
+            title: "Incident State",
+            type: FieldType.Entity,
+            filterEntityType: IncidentState,
+            filterQuery: {
+              projectId: DashboardNavigation.getProjectId()!,
+            },
+            filterDropdownField: {
+              label: "name",
+              value: "_id",
+            },
+          },
+          {
+            field: {
+              createdAt: true,
+            },
+            title: "Starts At",
+            type: FieldType.Date,
+          },
+          {
+            field: {
+              endsAt: true,
+            },
+            title: "Ends At",
+            type: FieldType.Date,
+          },
+        ]}
+        columns={[
+          {
+            field: {
+              incidentState: {
+                name: true,
+                color: true,
+              },
+            },
+            title: "Incident Status",
+            type: FieldType.Text,
+
+            getElement: (item: IncidentStateTimeline): ReactElement => {
+              if (!item["incidentState"]) {
+                throw new BadDataException("Incident Status not found");
+              }
+
+              return (
+                <Pill
+                  color={item["incidentState"]["color"] as Color}
+                  text={item["incidentState"]["name"] as string}
+                />
+              );
+            },
+          },
+          {
+            field: {
+              createdAt: true,
+            },
+            title: "Starts At",
+            type: FieldType.DateTime,
+          },
+          {
+            field: {
+              endsAt: true,
+            },
+            title: "Ends At",
+            type: FieldType.DateTime,
+            noValueMessage: "Currently Active",
+          },
+          {
+            field: {
+              endsAt: true,
+            },
+            title: "Duration",
+            type: FieldType.Text,
+            getElement: (item: IncidentStateTimeline): ReactElement => {
+              return (
+                <p>
+                  {OneUptimeDate.differenceBetweenTwoDatesAsFromattedString(
+                    item["createdAt"] as Date,
+                    (item["endsAt"] as Date) || OneUptimeDate.getCurrentDate(),
+                  )}
+                </p>
+              );
+            },
+          },
+          {
+            field: {
+              shouldStatusPageSubscribersBeNotified: true,
+            },
+            title: "Subscribers Notified",
+            type: FieldType.Boolean,
+          },
+        ]}
+      />
+      {showViewLogsModal ? (
+        <Modal
+          title={"Why did the status change?"}
+          description="Here is more information about why the status changed for this monitor."
+          isLoading={false}
+          modalWidth={ModalWidth.Large}
+          onSubmit={() => {
+            setShowViewLogsModal(false);
+          }}
+          submitButtonText={"Close"}
+          submitButtonStyleType={ButtonStyleType.NORMAL}
         >
-            <ModelTable<IncidentStateTimeline>
-                modelType={IncidentStateTimeline}
-                id="table-incident-status-timeline"
-                isDeleteable={true}
-                isCreateable={true}
-                isViewable={false}
-                query={{
-                    incidentId: modelId,
-                    projectId: props.currentProject?._id,
-                }}
-                onBeforeCreate={(
-                    item: IncidentStateTimeline
-                ): Promise<IncidentStateTimeline> => {
-                    if (!props.currentProject || !props.currentProject.id) {
-                        throw new BadDataException('Project ID cannot be null');
-                    }
-                    item.incidentId = modelId;
-                    item.projectId = props.currentProject.id;
-                    return Promise.resolve(item);
-                }}
-                cardProps={{
-                    icon: IconProp.List,
-                    title: 'Status Timeline',
-                    description:
-                        'Here is the status timeline for this incident',
-                }}
-                noItemsMessage={
-                    'No status timeline created for this incident so far.'
-                }
-                formFields={[
-                    {
-                        field: {
-                            incidentState: true,
-                        },
-                        title: 'Incident Status',
-                        fieldType: FormFieldSchemaType.Dropdown,
-                        required: true,
-                        placeholder: 'Incident Status',
-                        dropdownModal: {
-                            type: IncidentState,
-                            labelField: 'name',
-                            valueField: '_id',
-                        },
-                    },
-                ]}
-                showRefreshButton={true}
-                showFilterButton={true}
-                viewPageRoute={props.pageRoute}
-                columns={[
-                    {
-                        field: {
-                            incidentState: {
-                                name: true,
-                                color: true,
-                            },
-                        },
-                        title: 'Incident Status',
-                        type: FieldType.Text,
-                        isFilterable: true,
-                        getElement: (item: JSONObject): ReactElement => {
-                            if (!item['incidentState']) {
-                                throw new BadDataException(
-                                    'Incident Status not found'
-                                );
-                            }
+          <SimpleLogViewer>
+            {logs.split("\n").map((log: string, i: number) => {
+              return <div key={i}>{log}</div>;
+            })}
+          </SimpleLogViewer>
+        </Modal>
+      ) : (
+        <></>
+      )}
 
-                            return (
-                                <Pill
-                                    color={
-                                        (item['incidentState'] as JSONObject)[
-                                            'color'
-                                        ] as Color
-                                    }
-                                    text={
-                                        (item['incidentState'] as JSONObject)[
-                                            'name'
-                                        ] as string
-                                    }
-                                />
-                            );
-                        },
-                    },
-                    {
-                        field: {
-                            createdAt: true,
-                        },
-                        title: 'Reported At',
-                        type: FieldType.DateTime,
-                    },
-                ]}
-            />
-        </Page>
-    );
+      {showRootCause ? (
+        <ConfirmModal
+          title={"Root Cause"}
+          description={
+            <div>
+              <MarkdownViewer text={rootCause} />
+            </div>
+          }
+          isLoading={false}
+          onSubmit={() => {
+            setShowRootCause(false);
+          }}
+          submitButtonText={"Close"}
+          submitButtonType={ButtonStyleType.NORMAL}
+        />
+      ) : (
+        <></>
+      )}
+    </Fragment>
+  );
 };
 
-export default IncidentDelete;
+export default IncidentViewStateTimeline;

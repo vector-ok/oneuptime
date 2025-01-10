@@ -1,157 +1,264 @@
-import Route from 'Common/Types/API/Route';
-import Page from 'CommonUI/src/Components/Page/Page';
-import React, { FunctionComponent, ReactElement } from 'react';
-import PageMap from '../../../Utils/PageMap';
-import RouteMap, { RouteUtil } from '../../../Utils/RouteMap';
-import PageComponentProps from '../../PageComponentProps';
-import SideMenu from './SideMenu';
-import Navigation from 'CommonUI/src/Utils/Navigation';
-import ObjectID from 'Common/Types/ObjectID';
-import ModelTable from 'CommonUI/src/Components/ModelTable/ModelTable';
-import MonitorStatusTimeline from 'Model/Models/MonitorStatusTimeline';
-import { IconProp } from 'CommonUI/src/Components/Icon/Icon';
-import BadDataException from 'Common/Types/Exception/BadDataException';
-import FormFieldSchemaType from 'CommonUI/src/Components/Forms/Types/FormFieldSchemaType';
-import MonitorStatus from 'Model/Models/MonitorStatus';
-import FieldType from 'CommonUI/src/Components/Types/FieldType';
-import { JSONObject } from 'Common/Types/JSON';
-import Statusbubble from 'CommonUI/src/Components/StatusBubble/StatusBubble';
-import Color from 'Common/Types/Color';
+import DisabledWarning from "../../../Components/Monitor/DisabledWarning";
+import DashboardNavigation from "../../../Utils/Navigation";
+import PageComponentProps from "../../PageComponentProps";
+import { Black } from "Common/Types/BrandColors";
+import OneUptimeDate from "Common/Types/Date";
+import BadDataException from "Common/Types/Exception/BadDataException";
+import IconProp from "Common/Types/Icon/IconProp";
+import ObjectID from "Common/Types/ObjectID";
+import { ButtonStyleType } from "Common/UI/Components/Button/Button";
+import FormFieldSchemaType from "Common/UI/Components/Forms/Types/FormFieldSchemaType";
+import MarkdownViewer from "Common/UI/Components/Markdown.tsx/MarkdownViewer";
+import ConfirmModal from "Common/UI/Components/Modal/ConfirmModal";
+import Modal, { ModalWidth } from "Common/UI/Components/Modal/Modal";
+import ModelTable from "Common/UI/Components/ModelTable/ModelTable";
+import SimpleLogViewer from "Common/UI/Components/SimpleLogViewer/SimpleLogViewer";
+import Statusbubble from "Common/UI/Components/StatusBubble/StatusBubble";
+import FieldType from "Common/UI/Components/Types/FieldType";
+import Navigation from "Common/UI/Utils/Navigation";
+import MonitorStatus from "Common/Models/DatabaseModels/MonitorStatus";
+import MonitorStatusTimeline from "Common/Models/DatabaseModels/MonitorStatusTimeline";
+import React, {
+  Fragment,
+  FunctionComponent,
+  ReactElement,
+  useState,
+} from "react";
 
-const MonitorDelete: FunctionComponent<PageComponentProps> = (
-    props: PageComponentProps
+const StatusTimeline: FunctionComponent<PageComponentProps> = (
+  props: PageComponentProps,
 ): ReactElement => {
-    const modelId: ObjectID = new ObjectID(
-        Navigation.getLastParam(1)?.toString().substring(1) || ''
-    );
+  const modelId: ObjectID = Navigation.getLastParamAsObjectID(1);
 
-    return (
-        <Page
-            title={'Monitors'}
-            breadcrumbLinks={[
-                {
-                    title: 'Project',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.HOME] as Route,
-                        modelId
-                    ),
-                },
-                {
-                    title: 'Monitors',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.MONITORS] as Route,
-                        modelId
-                    ),
-                },
-                {
-                    title: 'View Monitor',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.MONITOR_VIEW] as Route,
-                        modelId
-                    ),
-                },
-                {
-                    title: 'Status Timeline',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.MONITOR_VIEW_STATUS_TIMELINE] as Route,
-                        modelId
-                    ),
-                },
-            ]}
-            sideMenu={<SideMenu modelId={modelId} />}
+  const [showViewLogsModal, setShowViewLogsModal] = useState<boolean>(false);
+  const [logs, setLogs] = useState<string>("");
+
+  const [showRootCause, setShowRootCause] = useState<boolean>(false);
+  const [rootCause, setRootCause] = useState<string>("");
+
+  return (
+    <Fragment>
+      <DisabledWarning monitorId={modelId} />
+      <ModelTable<MonitorStatusTimeline>
+        modelType={MonitorStatusTimeline}
+        id="table-monitor-status-timeline"
+        name="Monitor > Status Timeline"
+        isDeleteable={true}
+        showViewIdButton={true}
+        isCreateable={true}
+        isViewable={false}
+        selectMoreFields={{
+          statusChangeLog: true,
+          rootCause: true,
+        }}
+        actionButtons={[
+          {
+            title: "View Cause",
+            buttonStyleType: ButtonStyleType.NORMAL,
+            icon: IconProp.TransparentCube,
+            onClick: async (
+              item: MonitorStatusTimeline,
+              onCompleteAction: VoidFunction,
+            ) => {
+              setRootCause(
+                item["rootCause"]
+                  ? item["rootCause"].toString()
+                  : "No root cause. This monitor status could be created manually.",
+              );
+              setShowRootCause(true);
+
+              onCompleteAction();
+            },
+          },
+          {
+            title: "View Logs",
+            buttonStyleType: ButtonStyleType.NORMAL,
+            icon: IconProp.List,
+            onClick: async (
+              item: MonitorStatusTimeline,
+              onCompleteAction: VoidFunction,
+            ) => {
+              setLogs(
+                item["statusChangeLog"]
+                  ? JSON.stringify(item["statusChangeLog"], null, 2)
+                  : "No logs for this status event.",
+              );
+              setShowViewLogsModal(true);
+
+              onCompleteAction();
+            },
+          },
+        ]}
+        query={{
+          monitorId: modelId,
+          projectId: DashboardNavigation.getProjectId()!,
+        }}
+        onBeforeCreate={(
+          item: MonitorStatusTimeline,
+        ): Promise<MonitorStatusTimeline> => {
+          if (!props.currentProject || !props.currentProject._id) {
+            throw new BadDataException("Project ID cannot be null");
+          }
+          item.monitorId = modelId;
+          item.projectId = new ObjectID(props.currentProject._id);
+          return Promise.resolve(item);
+        }}
+        cardProps={{
+          title: "Status Timeline",
+          description: "Here is the status timeline for this monitor",
+        }}
+        noItemsMessage={"No status timeline created for this monitor so far."}
+        formFields={[
+          {
+            field: {
+              monitorStatus: true,
+            },
+            title: "Monitor Status",
+            fieldType: FormFieldSchemaType.Dropdown,
+            required: true,
+            placeholder: "Monitor Status",
+            dropdownModal: {
+              type: MonitorStatus,
+              labelField: "name",
+              valueField: "_id",
+            },
+          },
+        ]}
+        showRefreshButton={true}
+        viewPageRoute={Navigation.getCurrentRoute()}
+        filters={[
+          {
+            field: {
+              monitorStatus: {
+                name: true,
+              },
+            },
+            title: "Monitor Status",
+            type: FieldType.Entity,
+            filterEntityType: MonitorStatus,
+            filterQuery: {
+              projectId: DashboardNavigation.getProjectId()!,
+            },
+            filterDropdownField: {
+              label: "name",
+              value: "_id",
+            },
+          },
+          {
+            field: {
+              createdAt: true,
+            },
+            title: "Starts At",
+            type: FieldType.Date,
+          },
+          {
+            field: {
+              endsAt: true,
+            },
+            title: "Ends At",
+            type: FieldType.Date,
+          },
+        ]}
+        columns={[
+          {
+            field: {
+              monitorStatus: {
+                name: true,
+                color: true,
+              },
+            },
+            title: "Monitor Status",
+            type: FieldType.Text,
+            getElement: (item: MonitorStatusTimeline): ReactElement => {
+              if (!item["monitorStatus"]) {
+                throw new BadDataException("Monitor Status not found");
+              }
+
+              return (
+                <Statusbubble
+                  color={item.monitorStatus.color || Black}
+                  shouldAnimate={false}
+                  text={item.monitorStatus.name || "Unknown"}
+                />
+              );
+            },
+          },
+          {
+            field: {
+              createdAt: true,
+            },
+            title: "Starts At",
+            type: FieldType.DateTime,
+          },
+          {
+            field: {
+              endsAt: true,
+            },
+            title: "Ends At",
+            type: FieldType.DateTime,
+            noValueMessage: "Currently Active",
+          },
+          {
+            field: {
+              endsAt: true,
+            },
+            title: "Duration",
+            type: FieldType.Text,
+            getElement: (item: MonitorStatusTimeline): ReactElement => {
+              return (
+                <p>
+                  {OneUptimeDate.differenceBetweenTwoDatesAsFromattedString(
+                    item["createdAt"] as Date,
+                    (item["endsAt"] as Date) || OneUptimeDate.getCurrentDate(),
+                  )}
+                </p>
+              );
+            },
+          },
+        ]}
+      />
+      {showViewLogsModal ? (
+        <Modal
+          title={"Why did the status change?"}
+          description="Here is more information about why the status changed for this monitor."
+          isLoading={false}
+          modalWidth={ModalWidth.Large}
+          onSubmit={() => {
+            setShowViewLogsModal(false);
+          }}
+          submitButtonText={"Close"}
+          submitButtonStyleType={ButtonStyleType.NORMAL}
         >
-            <ModelTable<MonitorStatusTimeline>
-                modelType={MonitorStatusTimeline}
-                id="table-monitor-status-timeline"
-                isDeleteable={true}
-                isCreateable={true}
-                isViewable={false}
-                query={{
-                    monitorId: modelId,
-                    projectId: props.currentProject?._id,
-                }}
-                onBeforeCreate={(
-                    item: MonitorStatusTimeline
-                ): Promise<MonitorStatusTimeline> => {
-                    if (!props.currentProject || !props.currentProject.id) {
-                        throw new BadDataException('Project ID cannot be null');
-                    }
-                    item.monitorId = modelId;
-                    item.projectId = props.currentProject.id;
-                    return Promise.resolve(item);
-                }}
-                cardProps={{
-                    icon: IconProp.List,
-                    title: 'Status Timeline',
-                    description: 'Here is the status timeline for this monitor',
-                }}
-                noItemsMessage={
-                    'No status timeline created for this monitor so far.'
-                }
-                formFields={[
-                    {
-                        field: {
-                            monitorStatus: true,
-                        },
-                        title: 'Monitor Status',
-                        fieldType: FormFieldSchemaType.Dropdown,
-                        required: true,
-                        placeholder: 'Monitor Status',
-                        dropdownModal: {
-                            type: MonitorStatus,
-                            labelField: 'name',
-                            valueField: '_id',
-                        },
-                    },
-                ]}
-                showRefreshButton={true}
-                showFilterButton={true}
-                viewPageRoute={props.pageRoute}
-                columns={[
-                    {
-                        field: {
-                            monitorStatus: {
-                                name: true,
-                                color: true,
-                            },
-                        },
-                        title: 'Monitor Status',
-                        type: FieldType.Text,
-                        isFilterable: true,
-                        getElement: (item: JSONObject): ReactElement => {
-                            if (!item['monitorStatus']) {
-                                throw new BadDataException(
-                                    'Monitor Status not found'
-                                );
-                            }
+          <SimpleLogViewer>
+            {logs.split("\n").map((log: string, i: number) => {
+              return <div key={i}>{log}</div>;
+            })}
+          </SimpleLogViewer>
+        </Modal>
+      ) : (
+        <></>
+      )}
 
-                            return (
-                                <Statusbubble
-                                    color={
-                                        (item['monitorStatus'] as JSONObject)[
-                                            'color'
-                                        ] as Color
-                                    }
-                                    text={
-                                        (item['monitorStatus'] as JSONObject)[
-                                            'name'
-                                        ] as string
-                                    }
-                                />
-                            );
-                        },
-                    },
-                    {
-                        field: {
-                            createdAt: true,
-                        },
-                        title: 'Reported At',
-                        type: FieldType.DateTime,
-                    },
-                ]}
-            />
-        </Page>
-    );
+      {showRootCause ? (
+        <ConfirmModal
+          title={"Root Cause"}
+          description={
+            <div>
+              <MarkdownViewer text={rootCause} />
+            </div>
+          }
+          isLoading={false}
+          onSubmit={() => {
+            setShowRootCause(false);
+          }}
+          submitButtonText={"Close"}
+          submitButtonType={ButtonStyleType.NORMAL}
+        />
+      ) : (
+        <></>
+      )}
+    </Fragment>
+  );
 };
 
-export default MonitorDelete;
+export default StatusTimeline;

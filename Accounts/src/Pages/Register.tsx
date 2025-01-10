@@ -1,173 +1,267 @@
-import React, { FunctionComponent } from 'react';
-import ModelForm, { FormType } from 'CommonUI/src/Components/Forms/ModelForm';
-import User from 'Model/Models/User';
-import Link from 'CommonUI/src/Components/Link/Link';
-import Route from 'Common/Types/API/Route';
-import FormFieldSchemaType from 'CommonUI/src/Components/Forms/Types/FormFieldSchemaType';
-import OneUptimeLogo from 'CommonUI/src/Images/logos/OneUptimePNG/7.png';
-import LoginUtil from '../Utils/Login';
-import { JSONObject } from 'Common/Types/JSON';
+import { SIGNUP_API_URL } from "../Utils/ApiPaths";
+import Route from "Common/Types/API/Route";
+import URL from "Common/Types/API/URL";
+import Dictionary from "Common/Types/Dictionary";
+import { JSONObject } from "Common/Types/JSON";
+import ErrorMessage from "Common/UI/Components/ErrorMessage/ErrorMessage";
+import ModelForm, { FormType } from "Common/UI/Components/Forms/ModelForm";
+import Fields from "Common/UI/Components/Forms/Types/Fields";
+import FormFieldSchemaType from "Common/UI/Components/Forms/Types/FormFieldSchemaType";
+import Link from "Common/UI/Components/Link/Link";
+import PageLoader from "Common/UI/Components/Loader/PageLoader";
+import { BILLING_ENABLED, DASHBOARD_URL } from "Common/UI/Config";
+import OneUptimeLogo from "Common/UI/Images/logos/OneUptimeSVG/3-transparent.svg";
+import BaseAPI from "Common/UI/Utils/API/API";
+import UiAnalytics from "Common/UI/Utils/Analytics";
+import LocalStorage from "Common/UI/Utils/LocalStorage";
+import LoginUtil from "Common/UI/Utils/Login";
+import ModelAPI, { ListResult } from "Common/UI/Utils/ModelAPI/ModelAPI";
+import Navigation from "Common/UI/Utils/Navigation";
+import UserUtil from "Common/UI/Utils/User";
+import Reseller from "Common/Models/DatabaseModels/Reseller";
+import User from "Common/Models/DatabaseModels/User";
+import React, { useState } from "react";
+import useAsyncEffect from "use-async-effect";
 
-import URL from 'Common/Types/API/URL';
-import { SIGNUP_API_URL } from '../Utils/ApiPaths';
+const RegisterPage: () => JSX.Element = () => {
+  const apiUrl: URL = SIGNUP_API_URL;
 
-const RegisterPage: FunctionComponent = () => {
-    const apiUrl: URL = SIGNUP_API_URL;
+  const [initialValues, setInitialValues] = React.useState<JSONObject>({});
 
-    return (
-        <div className="auth-page">
-            <div className="container-fluid p-0">
-                <div className="row g-0">
-                    <div className="col-xxl-3 col-lg-3 col-md-2"></div>
+  const [error, setError] = useState<string>("");
 
-                    <div className="col-xxl-6 col-lg-6 col-md-8">
-                        <div className="auth-full-page-content d-flex p-sm-5 p-4">
-                            <div className="w-100">
-                                <div className="d-flex flex-column h-100">
-                                    <div className="mt-4 text-center">
-                                        <img
-                                            style={{ height: '40px' }}
-                                            src={`/accounts/public/${OneUptimeLogo}`}
-                                        />
-                                    </div>
-                                    <div className="auth-content my-auto">
-                                        <div className="text-center">
-                                            <h5 className="mb-0">
-                                                Create your OneUptime account.
-                                            </h5>
-                                            <p className="text-muted mt-2 mb-0">
-                                                Join thousands of business that
-                                                use OneUptime{' '}
-                                            </p>
-                                            <p className="text-muted mb-2">
-                                                to help them stay online all the
-                                                time. No credit card required.
-                                            </p>
-                                        </div>
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
-                                        <ModelForm<User>
-                                            modelType={User}
-                                            id="register-form"
-                                            showAsColumns={2}
-                                            maxPrimaryButtonWidth={true}
-                                            initialValues={{
-                                                email: '',
-                                                name: '',
-                                                companyName: '',
-                                                companyPhoneNumber: '',
-                                                password: '',
-                                                confirmPassword: '',
-                                            }}
-                                            fields={[
-                                                {
-                                                    field: {
-                                                        email: true,
-                                                    },
-                                                    fieldType:
-                                                        FormFieldSchemaType.Email,
-                                                    placeholder:
-                                                        'jeff@example.com',
-                                                    required: true,
-                                                    title: 'Email',
-                                                },
-                                                {
-                                                    field: {
-                                                        name: true,
-                                                    },
-                                                    fieldType:
-                                                        FormFieldSchemaType.Text,
-                                                    placeholder: 'Jeff Smith',
-                                                    required: true,
-                                                    title: 'Full Name',
-                                                },
-                                                {
-                                                    field: {
-                                                        companyName: true,
-                                                    },
-                                                    fieldType:
-                                                        FormFieldSchemaType.Text,
-                                                    placeholder: 'Acme, Inc.',
-                                                    required: true,
-                                                    title: 'Company Name',
-                                                },
-                                                {
-                                                    field: {
-                                                        companyPhoneNumber:
-                                                            true,
-                                                    },
-                                                    fieldType:
-                                                        FormFieldSchemaType.Phone,
-                                                    required: true,
-                                                    placeholder:
-                                                        '+1-123-456-7890',
-                                                    title: 'Phone Number',
-                                                },
-                                                {
-                                                    field: {
-                                                        password: true,
-                                                    },
-                                                    fieldType:
-                                                        FormFieldSchemaType.Password,
-                                                    validation: {
-                                                        minLength: 6,
-                                                    },
-                                                    placeholder: 'Password',
-                                                    title: 'Password',
-                                                    required: true,
-                                                },
-                                                {
-                                                    field: {
-                                                        password: true,
-                                                    },
-                                                    validation: {
-                                                        minLength: 6,
-                                                        toMatchField:
-                                                            'password',
-                                                    },
-                                                    fieldType:
-                                                        FormFieldSchemaType.Password,
-                                                    placeholder:
-                                                        'Confirm Password',
-                                                    title: 'Confirm Password',
-                                                    overideFieldKey:
-                                                        'confirmPassword',
-                                                    required: true,
-                                                },
-                                            ]}
-                                            apiUrl={apiUrl}
-                                            formType={FormType.Create}
-                                            submitButtonText={'Sign Up'}
-                                            onSuccess={(value: JSONObject) => {
-                                                LoginUtil.login(value);
-                                            }}
-                                        />
+  const [reseller, setResller] = React.useState<Reseller | undefined>(
+    undefined,
+  );
 
-                                        <div className="mt-5 text-center">
-                                            <p className="text-muted mb-0">
-                                                Already have an account?{' '}
-                                                <Link
-                                                    to={
-                                                        new Route(
-                                                            '/accounts/login'
-                                                        )
-                                                    }
-                                                    className="underline-on-hover text-primary fw-semibold"
-                                                >
-                                                    Log in.
-                                                </Link>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+  if (UserUtil.isLoggedIn()) {
+    Navigation.navigate(DASHBOARD_URL);
+  }
 
-                    <div className="col-xxl-3 col-lg-3 col-md-2"></div>
-                </div>
-            </div>
+  type FetchResellerFunction = (resellerId: string) => Promise<void>;
+
+  const fetchReseller: FetchResellerFunction = async (
+    resellerId: string,
+  ): Promise<void> => {
+    setIsLoading(true);
+
+    try {
+      const reseller: ListResult<Reseller> = await ModelAPI.getList<Reseller>({
+        modelType: Reseller,
+        query: {
+          resellerId: resellerId,
+        },
+        limit: 1,
+        skip: 0,
+        select: {
+          hidePhoneNumberOnSignup: true,
+        },
+        sort: {},
+        requestOptions: {},
+      });
+
+      if (reseller.data.length > 0) {
+        setResller(reseller.data[0]);
+      }
+    } catch (err) {
+      setError(BaseAPI.getFriendlyMessage(err));
+    }
+
+    setIsLoading(false);
+  };
+
+  useAsyncEffect(async () => {
+    // if promo code is found, please save it in localstorage.
+    if (Navigation.getQueryStringByName("promoCode")) {
+      LocalStorage.setItem(
+        "promoCode",
+        Navigation.getQueryStringByName("promoCode"),
+      );
+    }
+
+    if (Navigation.getQueryStringByName("email")) {
+      setInitialValues({
+        email: Navigation.getQueryStringByName("email"),
+      });
+    }
+
+    // if promo code is found, please save it in localstorage.
+    if (Navigation.getQueryStringByName("partnerId")) {
+      await fetchReseller(Navigation.getQueryStringByName("partnerId")!);
+    }
+  }, []);
+
+  let formFields: Fields<User> = [
+    {
+      field: {
+        email: true,
+      },
+      fieldType: FormFieldSchemaType.Email,
+      placeholder: "jeff@example.com",
+      required: true,
+      disabled: Boolean(initialValues && initialValues["email"]),
+      title: "Email",
+      dataTestId: "email",
+    },
+    {
+      field: {
+        name: true,
+      },
+      fieldType: FormFieldSchemaType.Text,
+      placeholder: "Jeff Smith",
+      required: true,
+      title: "Full Name",
+      dataTestId: "name",
+    },
+  ];
+
+  if (BILLING_ENABLED) {
+    formFields = formFields.concat([
+      {
+        field: {
+          companyName: true,
+        },
+        fieldType: FormFieldSchemaType.Text,
+        placeholder: "Acme, Inc.",
+        required: true,
+        title: "Company Name",
+        dataTestId: "companyName",
+      },
+    ]);
+
+    // If reseller wants to hide phone number on sign up, we hide it.
+    if (!reseller || !reseller.hidePhoneNumberOnSignup) {
+      formFields.push({
+        field: {
+          companyPhoneNumber: true,
+        },
+        fieldType: FormFieldSchemaType.Phone,
+        required: true,
+        placeholder: "+11234567890",
+        title: "Phone Number",
+        dataTestId: "companyPhoneNumber",
+      });
+    }
+  }
+
+  formFields = formFields.concat([
+    {
+      field: {
+        password: true,
+      },
+      fieldType: FormFieldSchemaType.Password,
+      validation: {
+        minLength: 6,
+      },
+      placeholder: "Password",
+      title: "Password",
+      required: true,
+      dataTestId: "password",
+    },
+    {
+      field: {
+        confirmPassword: true,
+      } as any,
+      validation: {
+        minLength: 6,
+        toMatchField: "password",
+      },
+      fieldType: FormFieldSchemaType.Password,
+      placeholder: "Confirm Password",
+      title: "Confirm Password",
+      overrideFieldKey: "confirmPassword",
+      required: true,
+      showEvenIfPermissionDoesNotExist: true,
+      dataTestId: "confirmPassword",
+    },
+  ]);
+
+  if (error) {
+    return <ErrorMessage error={error} />;
+  }
+
+  if (isLoading) {
+    return <PageLoader isVisible={true} />;
+  }
+
+  return (
+    <div className="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <img
+          className="mx-auto h-12 w-auto"
+          src={OneUptimeLogo}
+          alt="OneUptime"
+        />
+        <h2 className="mt-6 text-center text-2xl  tracking-tight text-gray-900">
+          Create your OneUptime account
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Join thousands of business that use OneUptime to help them stay online
+          all the time.
+        </p>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          No credit card required.
+        </p>
+      </div>
+
+      <div className="mt-8 lg:mx-auto lg:w-full lg:max-w-2xl">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <ModelForm<User>
+            modelType={User}
+            id="register-form"
+            showAsColumns={reseller ? 1 : 2}
+            name="Register"
+            initialValues={initialValues}
+            maxPrimaryButtonWidth={true}
+            fields={formFields}
+            createOrUpdateApiUrl={apiUrl}
+            onBeforeCreate={(item: User): Promise<User> => {
+              const utmParams: Dictionary<string> = UserUtil.getUtmParams();
+
+              if (utmParams && Object.keys(utmParams).length > 0) {
+                item.utmSource = utmParams["utmSource"] || "";
+                item.utmMedium = utmParams["utmMedium"] || "";
+                item.utmCampaign = utmParams["utmCampaign"] || "";
+                item.utmTerm = utmParams["utmTerm"] || "";
+                item.utmContent = utmParams["utmContent"] || "";
+                item.utmUrl = utmParams["utmUrl"] || "";
+
+                UiAnalytics.capture("utm_event", utmParams);
+              }
+
+              return Promise.resolve(item);
+            }}
+            formType={FormType.Create}
+            submitButtonText={"Sign Up"}
+            onSuccess={(value: User, miscData: JSONObject | undefined) => {
+              if (value && value.email) {
+                UiAnalytics.userAuth(value.email);
+                UiAnalytics.capture("accounts/register");
+              }
+
+              LoginUtil.login({
+                user: value,
+                token: miscData ? miscData["token"] : undefined,
+              });
+            }}
+          />
         </div>
-    );
+        <div className="mt-5 text-center text-gray-500">
+          <p className="text-muted mb-0">
+            Already have an account?{" "}
+            <Link
+              to={new Route("/accounts/login")}
+              className="text-indigo-500 hover:text-indigo-900 cursor-pointer"
+            >
+              Log in.
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default RegisterPage;

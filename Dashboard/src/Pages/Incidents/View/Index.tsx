@@ -1,328 +1,760 @@
-import Route from 'Common/Types/API/Route';
-import Page from 'CommonUI/src/Components/Page/Page';
-import React, { FunctionComponent, ReactElement } from 'react';
-import PageMap from '../../../Utils/PageMap';
-import RouteMap, { RouteUtil } from '../../../Utils/RouteMap';
-import PageComponentProps from '../../PageComponentProps';
-import SideMenu from './SideMenu';
-import FieldType from 'CommonUI/src/Components/Types/FieldType';
-import FormFieldSchemaType from 'CommonUI/src/Components/Forms/Types/FormFieldSchemaType';
-import { IconProp } from 'CommonUI/src/Components/Icon/Icon';
-import CardModelDetail from 'CommonUI/src/Components/ModelDetail/CardModelDetail';
-import Navigation from 'CommonUI/src/Utils/Navigation';
-import { JSONArray, JSONObject } from 'Common/Types/JSON';
-import ObjectID from 'Common/Types/ObjectID';
-import BadDataException from 'Common/Types/Exception/BadDataException';
-import Incident from 'Model/Models/Incident';
-import Color from 'Common/Types/Color';
-import Pill from 'CommonUI/src/Components/Pill/Pill';
-import MonitorsElement from '../../../Components/Monitor/Monitors';
-import Monitor from 'Model/Models/Monitor';
-import IncidentStateTimeline from 'Model/Models/IncidentStateTimeline';
-import ModelAPI, { ListResult } from 'CommonUI/src/Utils/ModelAPI/ModelAPI';
 import ChangeIncidentState, {
-    IncidentType,
-} from '../../../Components/Incident/ChangeState';
-import BaseModel from 'Common/Models/BaseModel';
-import IncidentSeverity from 'Model/Models/IncidentSeverity';
+  IncidentType,
+} from "../../../Components/Incident/ChangeState";
+import LabelsElement from "../../../Components/Label/Labels";
+import MonitorsElement from "../../../Components/Monitor/Monitors";
+import OnCallDutyPoliciesView from "../../../Components/OnCallPolicy/OnCallPolicies";
+import EventName from "../../../Utils/EventName";
+import PageComponentProps from "../../PageComponentProps";
+import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import SortOrder from "Common/Types/BaseDatabase/SortOrder";
+import { Black } from "Common/Types/BrandColors";
+import { LIMIT_PER_PROJECT } from "Common/Types/Database/LimitMax";
+import OneUptimeDate from "Common/Types/Date";
+import BadDataException from "Common/Types/Exception/BadDataException";
+import { PromiseVoidFunction } from "Common/Types/FunctionTypes";
+import { JSONObject } from "Common/Types/JSON";
+import ObjectID from "Common/Types/ObjectID";
+import CheckboxViewer from "Common/UI/Components/Checkbox/CheckboxViewer";
+import ErrorMessage from "Common/UI/Components/ErrorMessage/ErrorMessage";
+import FormFieldSchemaType from "Common/UI/Components/Forms/Types/FormFieldSchemaType";
+import InfoCard from "Common/UI/Components/InfoCard/InfoCard";
+import PageLoader from "Common/UI/Components/Loader/PageLoader";
+import CardModelDetail from "Common/UI/Components/ModelDetail/CardModelDetail";
+import Pill from "Common/UI/Components/Pill/Pill";
+import ProbeElement from "Common/UI/Components/Probe/Probe";
+import FieldType from "Common/UI/Components/Types/FieldType";
+import BaseAPI from "Common/UI/Utils/API/API";
+import GlobalEvent from "Common/UI/Utils/GlobalEvents";
+import ModelAPI, { ListResult } from "Common/UI/Utils/ModelAPI/ModelAPI";
+import Navigation from "Common/UI/Utils/Navigation";
+import Incident from "Common/Models/DatabaseModels/Incident";
+import IncidentSeverity from "Common/Models/DatabaseModels/IncidentSeverity";
+import IncidentState from "Common/Models/DatabaseModels/IncidentState";
+import IncidentStateTimeline from "Common/Models/DatabaseModels/IncidentStateTimeline";
+import Label from "Common/Models/DatabaseModels/Label";
+import React, {
+  Fragment,
+  FunctionComponent,
+  ReactElement,
+  useEffect,
+  useState,
+} from "react";
+import UserElement from "../../../Components/User/User";
+import Card from "Common/UI/Components/Card/Card";
+import DashboardLogsViewer from "../../../Components/Logs/LogsViewer";
+import TelemetryType from "Common/Types/Telemetry/TelemetryType";
+import JSONFunctions from "Common/Types/JSONFunctions";
+import TraceTable from "../../../Components/Traces/TraceTable";
+import { TelemetryQuery } from "Common/Types/Telemetry/TelemetryQuery";
+import MetricView from "../../../Components/Metrics/MetricView";
+import MetricViewData from "Common/Types/Metrics/MetricViewData";
+import IconProp from "Common/Types/Icon/IconProp";
+import HeaderAlert, {
+  HeaderAlertType,
+} from "Common/UI/Components/HeaderAlert/HeaderAlert";
+import ColorSwatch from "Common/Types/ColorSwatch";
 
-const IncidentView: FunctionComponent<PageComponentProps> = (
-    _props: PageComponentProps
-): ReactElement => {
-    const modelId: ObjectID = new ObjectID(
-        Navigation.getLastParam()?.toString().substring(1) || ''
+const IncidentView: FunctionComponent<
+  PageComponentProps
+> = (): ReactElement => {
+  const modelId: ObjectID = Navigation.getLastParamAsObjectID();
+
+  const [incidentStateTimeline, setIncidentStateTimeline] = useState<
+    IncidentStateTimeline[]
+  >([]);
+  const [incidentStates, setIncidentStates] = useState<IncidentState[]>([]);
+
+  const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [telemetryQuery, setTelemetryQuery] = useState<TelemetryQuery | null>(
+    null,
+  );
+
+  const fetchData: PromiseVoidFunction = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+
+      const incidentTimelines: ListResult<IncidentStateTimeline> =
+        await ModelAPI.getList({
+          modelType: IncidentStateTimeline,
+          query: {
+            incidentId: modelId,
+          },
+          limit: LIMIT_PER_PROJECT,
+          skip: 0,
+          select: {
+            _id: true,
+            startsAt: true,
+            createdByUser: {
+              name: true,
+              email: true,
+              profilePictureId: true,
+            },
+            incidentStateId: true,
+          },
+          sort: {
+            startsAt: SortOrder.Ascending,
+          },
+        });
+
+      const incidentStates: ListResult<IncidentState> = await ModelAPI.getList({
+        modelType: IncidentState,
+        query: {},
+        limit: LIMIT_PER_PROJECT,
+        skip: 0,
+        select: {
+          _id: true,
+          name: true,
+          isAcknowledgedState: true,
+          isResolvedState: true,
+        },
+        sort: {},
+      });
+
+      const incident: Incident | null = await ModelAPI.getItem({
+        id: modelId,
+        modelType: Incident,
+        select: {
+          telemetryQuery: true,
+        },
+      });
+
+      let telemetryQuery: TelemetryQuery | null = null;
+
+      if (incident?.telemetryQuery) {
+        telemetryQuery = JSONFunctions.deserialize(
+          incident?.telemetryQuery as any,
+        ) as any;
+      }
+
+      setTelemetryQuery(telemetryQuery);
+      setIncidentStates(incidentStates.data as IncidentState[]);
+      setIncidentStateTimeline(
+        incidentTimelines.data as IncidentStateTimeline[],
+      );
+      setError("");
+    } catch (err) {
+      setError(BaseAPI.getFriendlyMessage(err));
+    }
+
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData().catch((err: Error) => {
+      setError(BaseAPI.getFriendlyMessage(err));
+    });
+  }, []);
+
+  if (isLoading) {
+    return <PageLoader isVisible={true} />;
+  }
+
+  if (error) {
+    return <ErrorMessage error={error} />;
+  }
+
+  type GetIncidentStateFunction = () => IncidentState | undefined;
+
+  const getAcknowledgeState: GetIncidentStateFunction = ():
+    | IncidentState
+    | undefined => {
+    return incidentStates.find((state: IncidentState) => {
+      return state.isAcknowledgedState;
+    });
+  };
+
+  const getResolvedState: GetIncidentStateFunction = ():
+    | IncidentState
+    | undefined => {
+    return incidentStates.find((state: IncidentState) => {
+      return state.isResolvedState;
+    });
+  };
+
+  type getTimeFunction = () => string;
+
+  const getTimeToAcknowledge: getTimeFunction = (): string => {
+    const incidentStartTime: Date =
+      incidentStateTimeline[0]?.startsAt || new Date();
+
+    const acknowledgeTime: Date | undefined = incidentStateTimeline.find(
+      (timeline: IncidentStateTimeline) => {
+        return (
+          timeline.incidentStateId?.toString() ===
+          getAcknowledgeState()?._id?.toString()
+        );
+      },
+    )?.startsAt;
+
+    const resolveTime: Date | undefined = incidentStateTimeline.find(
+      (timeline: IncidentStateTimeline) => {
+        return (
+          timeline.incidentStateId?.toString() ===
+          getResolvedState()?._id?.toString()
+        );
+      },
+    )?.startsAt;
+
+    if (!acknowledgeTime && !resolveTime) {
+      return (
+        "Not yet " +
+        (getAcknowledgeState()?.name?.toLowerCase() || "acknowledged")
+      );
+    }
+
+    if (!acknowledgeTime && resolveTime) {
+      return OneUptimeDate.convertMinutesToDaysHoursAndMinutes(
+        OneUptimeDate.getDifferenceInMinutes(resolveTime, incidentStartTime),
+      );
+    }
+
+    return OneUptimeDate.convertMinutesToDaysHoursAndMinutes(
+      OneUptimeDate.getDifferenceInMinutes(acknowledgeTime!, incidentStartTime),
     );
+  };
 
-    return (
-        <Page
-            title={'Incidents'}
-            breadcrumbLinks={[
-                {
-                    title: 'Project',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.HOME] as Route,
-                        modelId
-                    ),
+  const getTimeToResolve: getTimeFunction = (): string => {
+    const incidentStartTime: Date =
+      incidentStateTimeline[0]?.startsAt || new Date();
+
+    const resolveTime: Date | undefined = incidentStateTimeline.find(
+      (timeline: IncidentStateTimeline) => {
+        return (
+          timeline.incidentStateId?.toString() ===
+          getResolvedState()?._id?.toString()
+        );
+      },
+    )?.startsAt;
+
+    if (!resolveTime) {
+      return (
+        "Not yet " + (getResolvedState()?.name?.toLowerCase() || "resolved")
+      );
+    }
+
+    return OneUptimeDate.convertMinutesToDaysHoursAndMinutes(
+      OneUptimeDate.getDifferenceInMinutes(resolveTime, incidentStartTime),
+    );
+  };
+
+  type GetInfoCardFunction = (value: string) => ReactElement;
+
+  const getInfoCardValue: GetInfoCardFunction = (
+    value: string,
+  ): ReactElement => {
+    return <div className="font-medium text-gray-900 text-lg">{value}</div>;
+  };
+
+  return (
+    <Fragment>
+      {/* Incident View  */}
+      <CardModelDetail<Incident>
+        name="Incident Details"
+        cardProps={{
+          title: "Incident Details",
+          description: "Here are more details for this incident.",
+        }}
+        isEditable={true}
+        formSteps={[
+          {
+            title: "Incident Details",
+            id: "incident-details",
+          },
+          {
+            title: "Labels",
+            id: "labels",
+          },
+        ]}
+        formFields={[
+          {
+            field: {
+              title: true,
+            },
+            title: "Incident Title",
+            stepId: "incident-details",
+            fieldType: FormFieldSchemaType.Text,
+            required: true,
+            placeholder: "Incident Title",
+            validation: {
+              minLength: 2,
+            },
+          },
+
+          {
+            field: {
+              incidentSeverity: true,
+            },
+            title: "Incident Severity",
+            description: "What type of incident is this?",
+            fieldType: FormFieldSchemaType.Dropdown,
+            stepId: "incident-details",
+            dropdownModal: {
+              type: IncidentSeverity,
+              labelField: "name",
+              valueField: "_id",
+            },
+            required: true,
+            placeholder: "Incident Severity",
+          },
+          {
+            field: {
+              labels: true,
+            },
+            title: "Labels ",
+            stepId: "labels",
+            description:
+              "Team members with access to these labels will only be able to access this resource. This is optional and an advanced feature.",
+            fieldType: FormFieldSchemaType.MultiSelectDropdown,
+            dropdownModal: {
+              type: Label,
+              labelField: "name",
+              valueField: "_id",
+            },
+            required: false,
+            placeholder: "Labels",
+          },
+        ]}
+        modelDetailProps={{
+          selectMoreFields: {
+            createdByUser: {
+              _id: true,
+              name: true,
+              email: true,
+              profilePictureId: true,
+            },
+          },
+          onBeforeFetch: async (): Promise<JSONObject> => {
+            // get ack incident.
+
+            const incidentTimelines: ListResult<IncidentStateTimeline> =
+              await ModelAPI.getList({
+                modelType: IncidentStateTimeline,
+                query: {
+                  incidentId: modelId,
                 },
-                {
-                    title: 'Incidents',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.INCIDENTS] as Route,
-                        modelId
-                    ),
+                limit: LIMIT_PER_PROJECT,
+                skip: 0,
+                select: {
+                  _id: true,
+
+                  createdAt: true,
+                  createdByUser: {
+                    name: true,
+                    email: true,
+                    profilePictureId: true,
+                  },
+                  incidentState: {
+                    name: true,
+                    isResolvedState: true,
+                    isAcknowledgedState: true,
+                  },
                 },
-                {
-                    title: 'View Incident',
-                    to: RouteUtil.populateRouteParams(
-                        RouteMap[PageMap.INCIDENT_VIEW] as Route,
-                        modelId
-                    ),
+                sort: {},
+              });
+
+            return incidentTimelines;
+          },
+          showDetailsInNumberOfColumns: 2,
+          modelType: Incident,
+          id: "model-detail-incidents",
+          fields: [
+            {
+              field: {
+                _id: true,
+              },
+              title: "Incident ID",
+              fieldType: FieldType.ObjectID,
+            },
+            {
+              field: {
+                title: true,
+              },
+              title: "Incident Title",
+              fieldType: FieldType.Text,
+            },
+
+            {
+              field: {
+                currentIncidentState: {
+                  color: true,
+                  name: true,
                 },
-            ]}
-            sideMenu={<SideMenu modelId={modelId} />}
-        >
-            {/* Incident View  */}
-            <CardModelDetail
-                cardProps={{
-                    title: 'Incident Details',
-                    description: "Here's more details for this monitor.",
-                    icon: IconProp.Activity,
-                }}
-                isEditable={true}
-                formFields={[
-                    {
-                        field: {
-                            title: true,
-                        },
-                        title: 'Incident Title',
-                        fieldType: FormFieldSchemaType.Text,
-                        required: true,
-                        placeholder: 'Incident Title',
-                        validation: {
-                            minLength: 2,
-                        },
-                    },
-                    {
-                        field: {
-                            description: true,
-                        },
-                        title: 'Description',
-                        fieldType: FormFieldSchemaType.LongText,
-                        required: true,
-                        placeholder: 'Description',
-                    },
+              },
+              title: "Current State",
+              fieldType: FieldType.Entity,
+              getElement: (item: Incident): ReactElement => {
+                if (!item["currentIncidentState"]) {
+                  throw new BadDataException("Incident Status not found");
+                }
 
-                    {
-                        field: {
-                            incidentSeverity: true,
-                        },
-                        title: 'Incident Severity',
-                        description: 'What type of incident is this?',
-                        fieldType: FormFieldSchemaType.Dropdown,
-                        dropdownModal: {
-                            type: IncidentSeverity,
-                            labelField: 'name',
-                            valueField: '_id',
-                        },
-                        required: true,
-                        placeholder: 'Incident Severity',
-                    },
-                ]}
-                modelDetailProps={{
-                    onBeforeFetch: async (): Promise<JSONObject> => {
-                        // get ack incident.
+                return (
+                  <Pill
+                    color={item.currentIncidentState.color || Black}
+                    text={item.currentIncidentState.name || "Unknown"}
+                  />
+                );
+              },
+            },
+            {
+              field: {
+                incidentSeverity: {
+                  color: true,
+                  name: true,
+                },
+              },
+              title: "Incident Severity",
+              fieldType: FieldType.Entity,
+              getElement: (item: Incident): ReactElement => {
+                if (!item["incidentSeverity"]) {
+                  throw new BadDataException("Incident Severity not found");
+                }
 
-                        const incidentTimelines: ListResult<IncidentStateTimeline> =
-                            await ModelAPI.getList(
-                                IncidentStateTimeline,
-                                {
-                                    incidentId: modelId,
-                                },
-                                99,
-                                0,
-                                {
-                                    _id: true,
+                return (
+                  <Pill
+                    color={item.incidentSeverity.color || Black}
+                    text={item.incidentSeverity.name || "Unknown"}
+                  />
+                );
+              },
+            },
+            {
+              field: {
+                monitors: {
+                  name: true,
+                  _id: true,
+                },
+              },
+              title: "Monitors Affected",
+              fieldType: FieldType.Element,
+              getElement: (item: Incident): ReactElement => {
+                return <MonitorsElement monitors={item["monitors"] || []} />;
+              },
+            },
+            {
+              field: {
+                onCallDutyPolicies: {
+                  name: true,
+                  _id: true,
+                },
+              },
+              title: "On-Call Duty Policies",
+              fieldType: FieldType.Element,
+              getElement: (item: Incident): ReactElement => {
+                return (
+                  <OnCallDutyPoliciesView
+                    onCallPolicies={item.onCallDutyPolicies || []}
+                  />
+                );
+              },
+            },
+            {
+              field: {
+                createdAt: true,
+              },
+              title: "Declared At",
+              fieldType: FieldType.DateTime,
+            },
+            {
+              field: {
+                createdByProbe: {
+                  name: true,
+                  iconFileId: true,
+                },
+              },
+              title: "Declared By",
+              fieldType: FieldType.Element,
+              getElement: (item: Incident): ReactElement => {
+                if (item.createdByProbe) {
+                  return <ProbeElement probe={item.createdByProbe} />;
+                }
 
-                                    createdAt: true,
-                                },
-                                {},
-                                {
-                                    createdByUser: {
-                                        name: true,
-                                        email: true,
-                                    },
-                                    incidentState: {
-                                        name: true,
-                                        isResolvedState: true,
-                                        isAcknowledgedState: true,
-                                    },
-                                }
-                            );
+                if (item.createdByUser) {
+                  return <UserElement user={item.createdByUser} />;
+                }
 
-                        return incidentTimelines;
-                    },
-                    showDetailsInNumberOfColumns: 2,
-                    modelType: Incident,
-                    id: 'model-detail-incidents',
-                    fields: [
-                        {
-                            field: {
-                                _id: true,
-                            },
-                            title: 'Incident ID',
-                            fieldType: FieldType.ObjectID,
-                        },
-                        {
-                            field: {
-                                title: true,
-                            },
-                            title: 'Incident Title',
-                            fieldType: FieldType.Text,
-                        },
-                        {
-                            field: {
-                                description: true,
-                            },
-                            title: 'Description',
-                            fieldType: FieldType.LongText,
-                        },
-                        {
-                            field: {
-                                currentIncidentState: {
-                                    color: true,
-                                    name: true,
-                                },
-                            },
-                            title: 'Current State',
-                            fieldType: FieldType.Entity,
-                            getElement: (item: JSONObject): ReactElement => {
-                                if (!item['currentIncidentState']) {
-                                    throw new BadDataException(
-                                        'Incident Status not found'
-                                    );
-                                }
+                return <p>Unknown</p>;
+              },
+            },
+            {
+              field: {
+                shouldStatusPageSubscribersBeNotifiedOnIncidentCreated: true,
+              },
+              title: "Notify Status Page Subscribers",
+              fieldType: FieldType.Boolean,
+              getElement: (item: Incident): ReactElement => {
+                return (
+                  <div className="">
+                    <CheckboxViewer
+                      isChecked={
+                        item[
+                          "shouldStatusPageSubscribersBeNotifiedOnIncidentCreated"
+                        ] as boolean
+                      }
+                      text={
+                        item[
+                          "shouldStatusPageSubscribersBeNotifiedOnIncidentCreated"
+                        ]
+                          ? "Subscribers Notified"
+                          : "Subscribers Not Notified"
+                      }
+                    />{" "}
+                  </div>
+                );
+              },
+            },
 
-                                return (
-                                    <Pill
-                                        color={
-                                            (
-                                                item[
-                                                    'currentIncidentState'
-                                                ] as JSONObject
-                                            )['color'] as Color
-                                        }
-                                        text={
-                                            (
-                                                item[
-                                                    'currentIncidentState'
-                                                ] as JSONObject
-                                            )['name'] as string
-                                        }
-                                    />
-                                );
-                            },
-                        },
-                        {
-                            field: {
-                                incidentSeverity: {
-                                    color: true,
-                                    name: true,
-                                },
-                            },
-                            title: 'Incident Severity',
-                            fieldType: FieldType.Entity,
-                            getElement: (item: JSONObject): ReactElement => {
-                                if (!item['incidentSeverity']) {
-                                    throw new BadDataException(
-                                        'Incident Severity not found'
-                                    );
-                                }
+            {
+              field: {
+                labels: {
+                  name: true,
+                  color: true,
+                },
+              },
+              title: "Labels",
+              fieldType: FieldType.Element,
+              getElement: (item: Incident): ReactElement => {
+                return <LabelsElement labels={item["labels"] || []} />;
+              },
+            },
+            {
+              field: {
+                _id: true,
+              },
+              title: "Acknowledge Incident",
+              fieldType: FieldType.Element,
+              getElement: (
+                _item: Incident,
+                onBeforeFetchData: JSONObject | undefined,
+              ): ReactElement => {
+                return (
+                  <ChangeIncidentState
+                    incidentId={modelId}
+                    incidentTimeline={
+                      onBeforeFetchData
+                        ? (onBeforeFetchData["data"] as Array<BaseModel>)
+                        : []
+                    }
+                    incidentType={IncidentType.Ack}
+                    onActionComplete={async () => {
+                      await fetchData();
+                    }}
+                  />
+                );
+              },
+            },
+            {
+              field: {
+                _id: true,
+              },
+              title: "Resolve Incident",
+              fieldType: FieldType.Element,
+              getElement: (
+                _item: Incident,
+                onBeforeFetchData: JSONObject | undefined,
+              ): ReactElement => {
+                return (
+                  <ChangeIncidentState
+                    incidentId={modelId}
+                    incidentTimeline={
+                      onBeforeFetchData
+                        ? (onBeforeFetchData["data"] as Array<BaseModel>)
+                        : []
+                    }
+                    incidentType={IncidentType.Resolve}
+                    onActionComplete={async () => {
+                      GlobalEvent.dispatchEvent(
+                        EventName.ACTIVE_INCIDENTS_COUNT_REFRESH,
+                      );
+                      await fetchData();
+                    }}
+                  />
+                );
+              },
+            },
+          ],
+          modelId: modelId,
+        }}
+      />
 
-                                return (
-                                    <Pill
-                                        color={
-                                            (
-                                                item[
-                                                    'incidentSeverity'
-                                                ] as JSONObject
-                                            )['color'] as Color
-                                        }
-                                        text={
-                                            (
-                                                item[
-                                                    'incidentSeverity'
-                                                ] as JSONObject
-                                            )['name'] as string
-                                        }
-                                    />
-                                );
-                            },
-                        },
-                        {
-                            field: {
-                                monitors: {
-                                    name: true,
-                                    _id: true,
-                                },
-                            },
-                            title: 'Monitors Affected',
-                            fieldType: FieldType.Text,
-                            getElement: (item: JSONObject): ReactElement => {
-                                return (
-                                    <MonitorsElement
-                                        monitors={
-                                            Monitor.fromJSON(
-                                                (item[
-                                                    'monitors'
-                                                ] as JSONArray) || [],
-                                                Monitor
-                                            ) as Array<Monitor>
-                                        }
-                                    />
-                                );
-                            },
-                        },
-                        {
-                            field: {
-                                createdAt: true,
-                            },
-                            title: 'Created At',
-                            fieldType: FieldType.DateTime,
-                        },
-                        {
-                            title: 'Acknowledge Incident',
-                            fieldType: FieldType.Text,
-                            getElement: (
-                                _item: JSONObject,
-                                onBeforeFetchData: JSONObject,
-                                fetchItems: Function
-                            ): ReactElement => {
-                                return (
-                                    <ChangeIncidentState
-                                        incidentId={modelId}
-                                        incidentTimeline={
-                                            onBeforeFetchData[
-                                                'data'
-                                            ] as Array<BaseModel>
-                                        }
-                                        incidentType={IncidentType.Ack}
-                                        onActionComplete={() => {
-                                            fetchItems();
-                                        }}
-                                    />
-                                );
-                            },
-                        },
-                        {
-                            title: 'Resolve Incident',
-                            fieldType: FieldType.Text,
-                            getElement: (
-                                _item: JSONObject,
-                                onBeforeFetchData: JSONObject,
-                                fetchItems: Function
-                            ): ReactElement => {
-                                return (
-                                    <ChangeIncidentState
-                                        incidentId={modelId}
-                                        incidentTimeline={
-                                            onBeforeFetchData[
-                                                'data'
-                                            ] as Array<BaseModel>
-                                        }
-                                        incidentType={IncidentType.Resolve}
-                                        onActionComplete={() => {
-                                            fetchItems();
-                                        }}
-                                    />
-                                );
-                            },
-                        },
-                    ],
-                    modelId: modelId,
-                }}
+      <div className="flex space-x-5 mt-5 mb-5 w-full justify-between">
+        <InfoCard
+          title={`${getAcknowledgeState()?.name || "Acknowledged"} in`}
+          value={getInfoCardValue(getTimeToAcknowledge())}
+          className="w-1/2"
+        />
+        <InfoCard
+          title={`${getResolvedState()?.name || "Resolved"} in`}
+          value={getInfoCardValue(getTimeToResolve())}
+          className="w-1/2"
+        />
+      </div>
+
+      <CardModelDetail
+        name="Incident Description"
+        cardProps={{
+          title: "Incident Description",
+          description:
+            "Description of this incident. This is visible on Status Page and is in markdown format.",
+        }}
+        editButtonText="Edit Incident Description"
+        isEditable={true}
+        formFields={[
+          {
+            field: {
+              description: true,
+            },
+            title: "Description",
+
+            fieldType: FormFieldSchemaType.Markdown,
+            required: false,
+            placeholder: "Description",
+          },
+        ]}
+        modelDetailProps={{
+          showDetailsInNumberOfColumns: 1,
+          modelType: Incident,
+          id: "model-detail-incident-description",
+          fields: [
+            {
+              field: {
+                description: true,
+              },
+              title: "Description",
+              fieldType: FieldType.Markdown,
+            },
+          ],
+          modelId: modelId,
+        }}
+      />
+
+      <CardModelDetail
+        name="Root Cause"
+        cardProps={{
+          title: "Root Cause",
+          description:
+            "Why did this incident happen? Here is the root cause of this incident.",
+        }}
+        isEditable={false}
+        modelDetailProps={{
+          showDetailsInNumberOfColumns: 1,
+          modelType: Incident,
+          id: "model-detail-incident-root-cause",
+          fields: [
+            {
+              field: {
+                rootCause: true,
+              },
+              title: "",
+              placeholder: "No root cause identified for this incident.",
+              fieldType: FieldType.Markdown,
+            },
+          ],
+          modelId: modelId,
+        }}
+      />
+
+      <CardModelDetail
+        name="Remediation Notes"
+        cardProps={{
+          title: "Remediation Notes",
+          description:
+            "What steps should be taken to resolve this incident? Here are the remediation notes.",
+        }}
+        editButtonText="Edit Remediation Notes"
+        isEditable={true}
+        formFields={[
+          {
+            field: {
+              remediationNotes: true,
+            },
+            title: "Remediation Notes",
+
+            fieldType: FormFieldSchemaType.Markdown,
+            required: true,
+            placeholder: "Remediation Notes",
+          },
+        ]}
+        modelDetailProps={{
+          showDetailsInNumberOfColumns: 1,
+          modelType: Incident,
+          id: "model-detail-incident-remediation-notes",
+          fields: [
+            {
+              field: {
+                remediationNotes: true,
+              },
+              title: "Remediation Notes",
+              placeholder: "No remediation notes added for this incident.",
+              fieldType: FieldType.Markdown,
+            },
+          ],
+          modelId: modelId,
+        }}
+      />
+
+      {telemetryQuery &&
+        telemetryQuery.telemetryType === TelemetryType.Log &&
+        telemetryQuery.telemetryQuery && (
+          <div>
+            <Card title={"Logs"} description={"Logs for this incident."}>
+              <DashboardLogsViewer
+                id="logs-preview"
+                logQuery={telemetryQuery.telemetryQuery}
+                limit={10}
+                noLogsMessage="No logs found"
+              />
+            </Card>
+          </div>
+        )}
+
+      {telemetryQuery &&
+        telemetryQuery.telemetryType === TelemetryType.Trace &&
+        telemetryQuery.telemetryQuery && (
+          <div>
+            <TraceTable spanQuery={telemetryQuery.telemetryQuery} />
+          </div>
+        )}
+
+      {telemetryQuery &&
+        telemetryQuery.telemetryType === TelemetryType.Metric &&
+        telemetryQuery.metricViewData && (
+          <Card
+            title={"Metrics"}
+            description={"Metrics related to this incident."}
+            rightElement={
+              telemetryQuery.metricViewData.startAndEndDate ? (
+                <HeaderAlert
+                  icon={IconProp.Clock}
+                  onClick={() => {
+                    // do nothing!
+                  }}
+                  title={OneUptimeDate.getInBetweenDatesAsFormattedString(
+                    telemetryQuery.metricViewData.startAndEndDate,
+                  )}
+                  alertType={HeaderAlertType.INFO}
+                  colorSwatch={ColorSwatch.Blue}
+                />
+              ) : (
+                <></>
+              )
+            }
+          >
+            <MetricView
+              data={telemetryQuery.metricViewData}
+              hideQueryElements={true}
+              chartCssClass="rounded-md border border-gray-200 mt-2 shadow-none"
+              hideStartAndEndDate={true}
+              onChange={(_data: MetricViewData) => {
+                // do nothing!
+              }}
             />
-        </Page>
-    );
+          </Card>
+        )}
+    </Fragment>
+  );
 };
 
 export default IncidentView;

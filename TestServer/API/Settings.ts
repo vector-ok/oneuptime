@@ -1,0 +1,63 @@
+import { JSONObject } from "Common/Types/JSON";
+import LocalCache from "Common/Server/Infrastructure/LocalCache";
+import Express, {
+  ExpressRequest,
+  ExpressResponse,
+  ExpressRouter,
+  NextFunction,
+} from "Common/Server/Utils/Express";
+import Response from "Common/Server/Utils/Response";
+
+const router: ExpressRouter = Express.getRouter();
+
+router.post(
+  "/settings",
+  async (
+    req: ExpressRequest,
+    res: ExpressResponse,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const data: JSONObject = req.body;
+
+      const responseType: string | undefined = data["responseType"] as
+        | string
+        | undefined;
+      const responseCode: number | undefined = data["responseCode"] as
+        | number
+        | undefined;
+      const responseTime: number | undefined = data["responseTime"] as
+        | number
+        | undefined;
+      const responseBody: string | undefined = data["responseBody"] as
+        | string
+        | undefined;
+
+      const responseHeaders: JSONObject | undefined = data[
+        "responseHeaders"
+      ] as JSONObject | undefined;
+
+      LocalCache.setJSON(
+        "TestServer",
+        "responseHeaders",
+        responseHeaders || "",
+      );
+      LocalCache.setString(
+        "TestServer",
+        "responseType",
+        responseType || "JSON",
+      );
+      LocalCache.setNumber("TestServer", "responseCode", responseCode || 200);
+      LocalCache.setNumber("TestServer", "responseTime", responseTime || 0);
+      LocalCache.setString("TestServer", "responseBody", responseBody || "");
+
+      // middleware marks the probe as alive.
+      // so we don't need to do anything here.
+      return Response.sendEmptySuccessResponse(req, res);
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
+
+export default router;

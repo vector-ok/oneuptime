@@ -1,0 +1,26 @@
+{{> Start this}}
+
+{{> CustomLogo this}}
+{{> EmailTitle title=(concat "Incident: " incidentTitle) }}
+
+{{> InfoBlock info="A new note has been added to the incident. Here are the details:  "}}
+
+{{> DetailBoxStart this }}
+{{> DetailBoxField title=incidentTitle text="" }}
+{{> DetailBoxField title="Resources Affected: " text=resourcesAffected  }}
+{{> DetailBoxField title="Severity: " text=incidentSeverity  }}
+{{> DetailBoxField title="Note: " text=""  }}
+{{> DetailBoxField title="" text=note  }}
+{{> DetailBoxEnd this }}
+
+
+{{> InfoBlock info=(concat "This is an automated email sent to you because you are subscribed to " statusPageName) }}
+
+
+{{> InfoBlock info="You can visit the status page here:"}}
+{{> InfoBlock info=statusPageUrl}}
+
+{{> UnsubscribeBlock this}}
+{{> VerticalSpace this}}
+
+{{> End this}}

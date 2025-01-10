@@ -1,32 +1,30 @@
-import React, { FunctionComponent, ReactElement } from 'react';
-import Project from 'Model/Models/Project';
-import Link from 'CommonUI/src/Components/Link/Link';
-import Route from 'Common/Types/API/Route';
+import Route from "Common/Types/API/Route";
+import Link from "Common/UI/Components/Link/Link";
+import Project from "Common/Models/DatabaseModels/Project";
+import React, { FunctionComponent, ReactElement } from "react";
 
 export interface ComponentProps {
-    project: Project;
-    onNavigateComplete?: (() => void) | undefined;
+  project: Project;
+  onNavigateComplete?: (() => void) | undefined;
 }
 
 const ProjectElement: FunctionComponent<ComponentProps> = (
-    props: ComponentProps
+  props: ComponentProps,
 ): ReactElement => {
-    if (props.project && props.project._id) {
-        const _id: string = props.project._id
-            ? props.project._id.toString()
-            : '';
-        return (
-            <Link
-                onNavigateComplete={props.onNavigateComplete}
-                className="underline-on-hover"
-                to={new Route(`/dashboard/${_id}`)}
-            >
-                <span>{props.project.name}</span>
-            </Link>
-        );
-    }
+  if (props.project && props.project._id) {
+    const _id: string = props.project._id ? props.project._id.toString() : "";
+    return (
+      <Link
+        onNavigateComplete={props.onNavigateComplete}
+        className="hover:underline"
+        to={new Route(`/dashboard/${_id}`)}
+      >
+        <span>{props.project.name}</span>
+      </Link>
+    );
+  }
 
-    return <span>{props.project.name}</span>;
+  return <span>{props.project.name}</span>;
 };
 
 export default ProjectElement;
