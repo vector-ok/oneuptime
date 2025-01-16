@@ -1,0 +1,21 @@
+{{- if $.Values.testServer.enabled }}
+
+# OneUptime testServer Deployment
+{{- $testServerPorts := dict "port" $.Values.port.testServer -}}
+{{- $testServerEnv := dict "PORT"  $.Values.port.testServer -}}
+{{- $testServerDeploymentArgs :=dict "IsUI" true "ServiceName" "test-server" "Ports" $testServerPorts "Release" $.Release "Values" $.Values "Env" $testServerEnv -}}
+{{- include "oneuptime.deployment" $testServerDeploymentArgs }}
+---
+
+# OneUptime testServer Service
+{{- $testServerPorts := dict "port" $.Values.port.testServer -}}
+{{- $testServerServiceArgs := dict "ServiceName" "test-server" "Ports" $testServerPorts "Release" $.Release "Values" $.Values  -}}
+{{- include "oneuptime.service" $testServerServiceArgs }}
+---
+
+# OneUptime testServer autoscaler
+{{- $testServerAutoScalerArgs := dict "ServiceName" "test-server" "Release" $.Release "Values" $.Values -}}
+{{- include "oneuptime.autoscaler" $testServerAutoScalerArgs }}
+---
+
+{{- end }}

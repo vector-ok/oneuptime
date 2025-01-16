@@ -1,36 +1,31 @@
-import Monitor from 'Model/Models/Monitor';
-import React, { FunctionComponent, ReactElement } from 'react';
-import MonitorElement from './Monitor';
+import MonitorElement from "./Monitor";
+import TableColumnListComponent from "Common/UI/Components/TableColumnList/TableColumnListComponent";
+import Monitor from "Common/Models/DatabaseModels/Monitor";
+import React, { FunctionComponent, ReactElement } from "react";
 
 export interface ComponentProps {
-    monitors: Array<Monitor>;
-    onNavigateComplete?: (() => void) | undefined;
+  monitors: Array<Monitor>;
+  onNavigateComplete?: (() => void) | undefined;
 }
 
 const MonitorsElement: FunctionComponent<ComponentProps> = (
-    props: ComponentProps
+  props: ComponentProps,
 ): ReactElement => {
-    if (!props.monitors || props.monitors.length === 0) {
-        return <p>No monitors.</p>;
-    }
-
-    return (
-        <div>
-            {props.monitors.map((monitor: Monitor, i: number) => {
-                return (
-                    <span key={i}>
-                        <MonitorElement
-                            monitor={monitor}
-                            onNavigateComplete={props.onNavigateComplete}
-                        />
-                        {i !== props.monitors.length - 1 && (
-                            <span>,&nbsp;</span>
-                        )}
-                    </span>
-                );
-            })}
-        </div>
-    );
+  return (
+    <TableColumnListComponent
+      items={props.monitors}
+      moreText="more monitors"
+      getEachElement={(monitor: Monitor) => {
+        return (
+          <MonitorElement
+            monitor={monitor}
+            onNavigateComplete={props.onNavigateComplete}
+          />
+        );
+      }}
+      noItemsMessage="No monitors."
+    />
+  );
 };
 
 export default MonitorsElement;

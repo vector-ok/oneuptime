@@ -1,288 +1,490 @@
-# This docker file is for development.
-# It connects to debugging ports that help you debug the app.
 
-version: '3.7'
-
-x-common-variables: &common-variables
-   IS_SAAS_SERVICE: ${IS_SAAS_SERVICE}
 
 services:
-    ##IMPORTANT:
-    ## This container is an SMTP server used to send emails.
-    ## Setup private, tls_cert and tls_key keys before running this part
-    haraka:
-        ports:
-            - '2525:2525'
-        build:
-            network: host
-            context: ./Haraka
-            args:
-                PORT: '2525'
-        env_file:
-            - ./Haraka/.env
-
-    postgres:
-        image: postgres:latest
-        restart: always
-        env_file:
-            - ./Postgres/.env
-        ports:
-            - '5400:5432'
-        volumes: 
-            - postgres:/var/lib/postgresql/data
     
-    mail:
-        ports:
-            - 9110:9229 # Debugging port.
-            - 3190:3190
+
+    haraka:
+        extends:
+            file: ./docker-compose.base.yml
+            service: haraka
         build:
             network: host
             context: .
-            dockerfile: ./Mail/Dockerfile.dev
-        env_file:
-            - ./Common/.env
-            - ./CommonServer/.env
-            - ./Mail/.env
-        environment: *common-variables
-        depends_on:
-            - haraka
-            - postgres
-        volumes:
-            - ./Mail:/usr/src/app
-            # Use node modules of the container and not host system.
-            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
-            - /usr/src/app/node_modules/
-            - ./Common:/usr/src/Common
-            - ./Model:/usr/src/Model
-            - ./CommonServer:/usr/src/CommonServer
-            - ./CommonUI:/usr/src/CommonUI
-            - /usr/src/Common/node_modules/
-            - /usr/src/CommonUI/node_modules/
-            - /usr/src/CommonServer/node_modules/
-            - /usr/src/Model/node_modules/
-
-    saml:
-        image: kenchan0130/simplesamlphp
-        ports:
-            - 9876:8080
-            - 8443:8443
-        env_file:
-            - ./Common/.env
-            - ./CommonServer/.env
-            - ./SAML/.env
-        volumes:
-            - ./SAML/users.php:/var/www/simplesamlphp/config/authsources.php
+            dockerfile: ./Haraka/Dockerfile
 
     redis:
-        image: redis:7.0.3
-        ports:
-            - '6379:6379'
-        command: redis-server /usr/local/etc/redis/redis.conf
-        env_file:
-            - ./Redis/.env
-        volumes:
-            - ./Redis/redis.conf:/usr/local/etc/redis/redis.conf
+        ports: 
+            - '6310:6379'
+        extends:
+            file: ./docker-compose.base.yml
+            service: redis
 
-    accounts:
-        ports:
-            - '3003:3003'
+    clickhouse:
+        ports: 
+            - '9034:9000'
+            - '8189:8123'
+        extends:
+            file: ./docker-compose.base.yml
+            service: clickhouse
+
+    postgres:
+        ports: 
+            - '5400:5432'
+        extends:
+            file: ./docker-compose.base.yml
+            service: postgres
+
+
+    otel-collector:
+        extends:
+            file: ./docker-compose.base.yml
+            service: otel-collector
         build:
             network: host
             context: .
-            dockerfile: ./Accounts/Dockerfile.dev
-        env_file:
-            - ./Common/.env
-            - ./CommonUI/.env
-            - ./Accounts/.env
-        environment: *common-variables
-        depends_on:
-            - identity
+            dockerfile: ./OTelCollector/Dockerfile
+
+    accounts:
+        ports: 
+            - '${ACCOUNTS_PORT}:${ACCOUNTS_PORT}' # ws port for webpack
+        extends:
+            file: ./docker-compose.base.yml
+            service: accounts
         volumes:
             - ./Accounts:/usr/src/app
             # Use node modules of the container and not host system.
             # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/dev-env
             - /usr/src/app/node_modules/
             - ./Common:/usr/src/Common
-            - ./Model:/usr/src/Model
-            - ./CommonServer:/usr/src/CommonServer
-            - ./CommonUI:/usr/src/CommonUI
+
             - /usr/src/Common/node_modules/
-            - /usr/src/CommonUI/node_modules/
-            - /usr/src/CommonServer/node_modules/
-            - /usr/src/Model/node_modules/
+
+            
+        build:
+            network: host
+            context: .
+            dockerfile: ./Accounts/Dockerfile
+       
 
     dashboard:
-        ports:
-            - '3009:3009'
-        build:
-            network: host
-            context: .
-            dockerfile: ./Dashboard/Dockerfile.dev
-        env_file:
-            - ./Common/.env
-            - ./CommonUI/.env
-            - ./Accounts/.env
-        environment: *common-variables
-        depends_on:
-            - identity
-            - accounts
+        ports: 
+            - '${DASHBOARD_PORT}:${DASHBOARD_PORT}' # ws port for webpack
+        extends:
+            file: ./docker-compose.base.yml
+            service: dashboard
         volumes:
             - ./Dashboard:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/dev-env
             - /usr/src/app/node_modules/
             - ./Common:/usr/src/Common
-            - ./Model:/usr/src/Model
-            - ./CommonServer:/usr/src/CommonServer
-            - ./CommonUI:/usr/src/CommonUI
-            - /usr/src/Common/node_modules/
-            - /usr/src/CommonUI/node_modules/
-            - /usr/src/CommonServer/node_modules/
-            - /usr/src/Model/node_modules/
 
-    dashboard-api:
-        ports:
-            - '3002:3002'
-            - '9232:9229' # Debugging port.
+            - /usr/src/Common/node_modules/
+
+            
         build:
             network: host
             context: .
-            dockerfile: ./DashboardAPI/Dockerfile.dev
-        env_file:
-            - ./Common/.env
-            - ./CommonServer/.env
-            - ./DashboardAPI/.env
-        environment: *common-variables
-        depends_on:
-            - redis
-            - postgres
-            - mail
-        links:
-            - redis
-            - postgres
-            - mail
-        volumes:
-            - ./DashboardAPI:/usr/src/app
-            # Use node modules of the container and not host system.
-            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
-            - /usr/src/app/node_modules/
-            - ./Common:/usr/src/Common
-            - ./Model:/usr/src/Model
-            - ./CommonServer:/usr/src/CommonServer
-            - ./CommonUI:/usr/src/CommonUI
-            - /usr/src/Common/node_modules/
-            - /usr/src/CommonUI/node_modules/
-            - /usr/src/CommonServer/node_modules/
-            - /usr/src/Model/node_modules/
-
-    identity:
-        ports:
-            - '3087:3087'
-            - '9132:9229' # Debugging port.
-        build:
-            network: host
-            context: .
-            dockerfile: ./Identity/Dockerfile.dev
-        env_file:
-            - ./Common/.env
-            - ./CommonServer/.env
-            - ./Identity/.env
-        environment: *common-variables
-        depends_on:
-            - redis
-            - postgres
-            - mail
-        links:
-            - redis
-            - postgres
-            - mail
-        volumes:
-            - ./Identity:/usr/src/app
-            # Use node modules of the container and not host system.
-            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
-            - /usr/src/app/node_modules/
-            - ./Common:/usr/src/Common
-            - ./Model:/usr/src/Model
-            - ./CommonServer:/usr/src/CommonServer
-            - ./CommonUI:/usr/src/CommonUI
-            - /usr/src/Common/node_modules/
-            - /usr/src/CommonUI/node_modules/
-            - /usr/src/CommonServer/node_modules/
-            - /usr/src/Model/node_modules/
+            dockerfile: ./Dashboard/Dockerfile
+        
     
 
-    file:
-        ports:
-            - '3125:3125'
-            - '9012:9229' # Debugging port.
+    admin-dashboard:
+        ports: 
+            - '${ADMIN_DASHBOARD_PORT}:${ADMIN_DASHBOARD_PORT}' # ws port for webpack
+        extends:
+            file: ./docker-compose.base.yml
+            service: admin-dashboard
+        volumes:
+            - ./AdminDashboard:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/dev-env
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+
+            - /usr/src/Common/node_modules/
+
+            
         build:
             network: host
             context: .
-            dockerfile: ./File/Dockerfile.dev
-        env_file:
-            - ./Common/.env
-            - ./CommonServer/.env
-            - ./File/.env
-        environment: *common-variables
-        depends_on:
-            - postgres
-        links:
-            - postgres
+            dockerfile: ./AdminDashboard/Dockerfile
+
+
+    status-page:
+        ports: 
+            - '${STATUS_PAGE_PORT}:${STATUS_PAGE_PORT}' # ws port for webpack
+        extends:
+            file: ./docker-compose.base.yml
+            service: status-page
         volumes:
-            - ./File:/usr/src/app
+            - ./StatusPage:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/dev-env
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+
+            - /usr/src/Common/node_modules/
+
+            
+        build:
+            network: host
+            context: .
+            dockerfile: ./StatusPage/Dockerfile
+            
+    
+    test-server:
+        volumes:
+            - ./TestServer:/usr/src/app
             # Use node modules of the container and not host system.
             # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
             - /usr/src/app/node_modules/
             - ./Common:/usr/src/Common
-            - ./Model:/usr/src/Model
-            - ./CommonServer:/usr/src/CommonServer
-            - ./CommonUI:/usr/src/CommonUI
-            - /usr/src/Common/node_modules/
-            - /usr/src/CommonUI/node_modules/
-            - /usr/src/CommonServer/node_modules/
-            - /usr/src/Model/node_modules/
 
-  
-    home:
+            - /usr/src/Common/node_modules/
+
+            
+        extends:
+            file: ./docker-compose.base.yml
+            service: test-server
         ports:
-            - '1444:1444'
-            - '9235:9229' # Debugging port.
-        env_file:
-            - ./Common/.env
-            - ./CommonServer/.env
-            - ./Home/.env
-        environment: *common-variables
+            - '9141:9229' # Debugging port.
+            - '3800:3800'
         build:
             network: host
             context: .
-            dockerfile: ./Home/Dockerfile.dev
+            dockerfile: ./TestServer/Dockerfile
+
+
+    home:
         volumes:
             - ./Home:/usr/src/app
             # Use node modules of the container and not host system.
             # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
             - /usr/src/app/node_modules/
             - ./Common:/usr/src/Common
-            - ./Model:/usr/src/Model
-            - ./CommonServer:/usr/src/CommonServer
-            - ./CommonUI:/usr/src/CommonUI
             - /usr/src/Common/node_modules/
-            - /usr/src/CommonUI/node_modules/
-            - /usr/src/CommonServer/node_modules/
-            - /usr/src/Model/node_modules/
-    
-
-    nginx:
-        depends_on:
-            - identity
-            - accounts
-            - dashboard-api
-            - dashboard
-            - home
-        restart: always
-        build:
-            dockerfile: Dockerfile
-            network: host
-            context: ./Nginx
+        extends:
+            file: ./docker-compose.base.yml
+            service: home
         ports:
-            - '80:80'
-            - '443:443'
+            - '9212:9229' # Debugging port.
+        build:
+            network: host
+            context: .
+            dockerfile: ./Home/Dockerfile
+
+    worker:
+        volumes:
+            - ./Worker:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        extends:
+            file: ./docker-compose.base.yml
+            service: worker
+        ports:
+            - '8734:9229' # Debugging port.
+        build:
+            network: host
+            context: .
+            dockerfile: ./Worker/Dockerfile
+
+
+    workflow:
+        volumes:
+            - ./Workflow:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        extends:
+            file: ./docker-compose.base.yml
+            service: workflow
+        ports:
+            - '8735:9229' # Debugging port.
+        build:
+            network: host
+            context: .
+            dockerfile: ./Workflow/Dockerfile
+
+    api-reference:
+        volumes:
+            - ./APIReference:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        extends:
+            file: ./docker-compose.base.yml
+            service: api-reference
+        ports:
+            - '8737:9229' # Debugging port.
+        build:
+            network: host
+            context: .
+            dockerfile: ./APIReference/Dockerfile
+
+    docs:
+        volumes:
+            - ./Docs:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        extends:
+            file: ./docker-compose.base.yml
+            service: docs
+        ports:
+            - '8738:9229' # Debugging port.
+        build:
+            network: host
+            context: .
+            dockerfile: ./Docs/Dockerfile
+
+    app:
+        volumes:
+            - ./App:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        extends:
+            file: ./docker-compose.base.yml
+            service: app
+        ports:
+            - '9232:9229' # Debugging port.
+        build:
+            network: host
+            context: .
+            dockerfile: ./App/Dockerfile
+        
+
+    probe-1: 
+        volumes:
+            - ./Probe:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+
+            - /usr/src/Common/node_modules/
+
+              
+        extends:
+            file: ./docker-compose.base.yml
+            service: probe-1
+        ports:
+          - '9655:9229' # Debugging port.
+        build:
+            network: host
+            context: .
+            dockerfile: ./Probe/Dockerfile
+
+    probe-2: 
+        volumes:
+            - ./Probe:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+
+            - /usr/src/Common/node_modules/
+
+              
+        extends:
+            file: ./docker-compose.base.yml
+            service: probe-2
+        ports:
+          - '9656:9229' # Debugging port.
+        build:
+            network: host
+            context: .
+            dockerfile: ./Probe/Dockerfile
+
+    isolated-vm:
+        volumes:
+            - ./IsolatedVM:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+
+            - /usr/src/Common/node_modules/
+
+            
+        ports:
+          - '9974:9229' # Debugging port.
+        extends:
+            file: ./docker-compose.base.yml
+            service: isolated-vm
+        build:
+            network: host
+            context: .
+            dockerfile: ./IsolatedVM/Dockerfile
+    
+    probe-ingest:
+        volumes:
+            - ./ProbeIngest:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        ports:
+          - '9932:9229' # Debugging port.
+        extends:
+            file: ./docker-compose.base.yml
+            service: probe-ingest
+        build:
+            network: host
+            context: .
+            dockerfile: ./ProbeIngest/Dockerfile
+
+    open-telemetry-ingest:
+        volumes:
+            - ./OpenTelemetryIngest:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        ports:
+          - '9938:9229' # Debugging port.
+        extends:
+            file: ./docker-compose.base.yml
+            service: open-telemetry-ingest
+        build:
+            network: host
+            context: .
+            dockerfile: ./OpenTelemetryIngest/Dockerfile
+
+    incoming-request-ingest:
+        volumes:
+            - ./IncomingRequestIngest:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        ports:
+          - '9933:9229' # Debugging port.
+        extends:
+            file: ./docker-compose.base.yml
+            service: incoming-request-ingest
+        build:
+            network: host
+            context: .
+            dockerfile: ./IncomingRequestIngest/Dockerfile
+
+    fluent-ingest:
+        volumes:
+            - ./FluentIngest:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        ports:
+          - '9937:9229' # Debugging port.
+        extends:
+            file: ./docker-compose.base.yml
+            service: fluent-ingest
+        build:
+            network: host
+            context: .
+            dockerfile: ./FluentIngest/Dockerfile
+
+
+    # Fluentd. Required only for development. In  production its the responsibility of the customer to run fluentd and pipe logs to OneUptime.
+    # We run this container just for development, to see if logs are piped. 
+
+    fluentd:
+        ports:
+            - 24224:24224
+            - 24224:24224/udp
+            - 8888:8888
+        user: fluent
+        extends:
+            file: ./docker-compose.base.yml
+            service: fluentd
+        volumes:
+            - ./Fluentd/fluent.conf:/fluentd/etc/fluent.conf
+        build:
+            network: host
+            context: ./Fluentd
+            dockerfile: ./Dockerfile
+
+    fluent-bit: 
+        ports:
+            - 24225:24224
+            - 24285:24284
+            - 2020:2020
+            - 8889:8889
+        extends:
+            file: ./docker-compose.base.yml
+            service: fluent-bit
+        volumes:
+            - ./FluentBit/etc:/fluent-bit/etc/
+        build:
+            network: host
+            context: .
+            dockerfile: ./FluentBit/Dockerfile
+
+    ingress:
+        build:
+            network: host
+            context: .
+            dockerfile: ./Nginx/Dockerfile
+        extends:
+            file: ./docker-compose.base.yml
+            service: ingress
+
+    # e2e tests
+    e2e:
+        extends:
+            file: ./docker-compose.base.yml
+            service: e2e
+        volumes:
+            - ./E2E/playwright-report:/usr/src/app/playwright-report
+            - ./E2E/test-results:/usr/src/app/test-results
+        build:
+            network: host
+            context: .
+            dockerfile: ./E2E/Dockerfile
+
+    copilot:
+        volumes:
+            - ./Copilot:/usr/src/app
+            # Use node modules of the container and not host system.
+            # https://stackoverflow.com/questions/29181032/add-a-volume-to-docker-but-exclude-a-sub-folder
+            - /usr/src/app/node_modules/
+            - ./Common:/usr/src/Common
+            - /usr/src/Common/node_modules/
+        ports:
+            - '9985:9229' # Debugging port.
+        extends:
+            file: ./docker-compose.base.yml
+            service: copilot
+        build:
+            network: host
+            context: .
+            dockerfile: ./Copilot/Dockerfile
+
 volumes:
     postgres:
+    clickhouse:
+    
+networks:
+  oneuptime: 
+    driver: bridge

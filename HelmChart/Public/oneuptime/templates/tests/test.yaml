@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ printf "%s-%s" $.Release.Name "test"  }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: oneptime-test
+      imagePullPolicy: {{ $.Values.image.pullPolicy }}
+      image: {{ printf "%s/%s/%s:%s" .Values.image.registry .Values.image.repository "test" .Values.image.tag }}
+      command: ['/bin/sh']
+      args: ["-c", 
+      "Scripts/status-check.sh {{ $.Values.httpProtocol }}://{{ $.Values.host }}",
+      ]
+  restartPolicy: Never

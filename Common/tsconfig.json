@@ -1,4 +1,12 @@
 {
+    "ts-node": {
+        // these options are overrides used only by ts-node
+        // same as the --compilerOptions flag and the TS_NODE_COMPILER_OPTIONS environment variable
+        "compilerOptions": {
+            "module": "commonjs",
+            "resolveJsonModule": true, 
+        }
+    },
     "compilerOptions": {
         "experimentalDecorators": true,
         /* Visit https://aka.ms/tsconfig.json to read more about this file */
@@ -101,6 +109,7 @@
 
         /* Completeness */
         // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
-        "skipLibCheck": true /* Skip type checking all .d.ts files. */
+                "skipLibCheck": true, /* Skip type checking all .d.ts files. */
+        "resolveJsonModule": true
     }
 }

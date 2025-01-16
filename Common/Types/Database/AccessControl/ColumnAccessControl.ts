@@ -1,43 +1,49 @@
-import 'reflect-metadata';
-import BaseModel from '../../../Models/BaseModel';
-import Dictionary from '../../Dictionary';
-import { ReflectionMetadataType } from '../../Reflection';
-import { ColumnAccessControl } from './AccessControl';
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import { ColumnAccessControl } from "../../BaseDatabase/AccessControl";
+import Dictionary from "../../Dictionary";
+import { ReflectionMetadataType } from "../../Reflection";
+import "reflect-metadata";
 
-const accessControlSymbol: Symbol = Symbol('ColumnAccessControl');
+const accessControlSymbol: symbol = Symbol("ColumnAccessControl");
 
 export default (accessControl: ColumnAccessControl): ReflectionMetadataType => {
-    return Reflect.metadata(accessControlSymbol, accessControl);
+  return Reflect.metadata(accessControlSymbol, accessControl);
 };
 
-export const getColumnAccessControl: Function = (
-    target: BaseModel,
-    propertyKey: string
+type GetColumnAccessControlFunction = (
+  target: BaseModel,
+  propertyKey: string,
+) => ColumnAccessControl;
+
+export const getColumnAccessControl: GetColumnAccessControlFunction = (
+  target: BaseModel,
+  propertyKey: string,
 ): ColumnAccessControl => {
-    return Reflect.getMetadata(
-        accessControlSymbol,
-        target,
-        propertyKey
-    ) as ColumnAccessControl;
+  return Reflect.getMetadata(
+    accessControlSymbol,
+    target,
+    propertyKey,
+  ) as ColumnAccessControl;
 };
 
-export const getColumnAccessControlForAllColumns: Function = <
-    T extends BaseModel
->(
-    target: T
-): Dictionary<ColumnAccessControl> => {
+type GetColumnAccessControlForAllColumnsFunction = <T extends BaseModel>(
+  target: T,
+) => Dictionary<ColumnAccessControl>;
+
+export const getColumnAccessControlForAllColumns: GetColumnAccessControlForAllColumnsFunction =
+  <T extends BaseModel>(target: T): Dictionary<ColumnAccessControl> => {
     const dictonary: Dictionary<ColumnAccessControl> = {};
     const keys: Array<string> = Object.keys(target);
 
     for (const key of keys) {
-        if (Reflect.getMetadata(accessControlSymbol, target, key)) {
-            dictonary[key] = Reflect.getMetadata(
-                accessControlSymbol,
-                target,
-                key
-            ) as ColumnAccessControl;
-        }
+      if (Reflect.getMetadata(accessControlSymbol, target, key)) {
+        dictonary[key] = Reflect.getMetadata(
+          accessControlSymbol,
+          target,
+          key,
+        ) as ColumnAccessControl;
+      }
     }
 
     return dictonary;
-};
+  };

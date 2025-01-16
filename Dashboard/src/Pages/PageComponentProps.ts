@@ -1,7 +1,8 @@
-import Project from 'Model/Models/Project';
-import Route from 'Common/Types/API/Route';
+import Route from "Common/Types/API/Route";
+import Project from "Common/Models/DatabaseModels/Project";
 
 export default interface ComponentProps {
-    pageRoute: Route;
-    currentProject: Project | null;
+  pageRoute: Route;
+  currentProject: Project | null;
+  hasPaymentMethod: boolean;
 }

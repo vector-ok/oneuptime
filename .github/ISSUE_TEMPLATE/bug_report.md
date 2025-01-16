@@ -1,8 +1,8 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: ''
-labels: ''
+title: '<Title of the issue>'
+labels: 'bug'
 assignees: ''
 
 ---
@@ -33,6 +33,9 @@ If applicable, add screenshots to help explain your problem.
  - OS: [e.g. iOS8.1]
  - Browser [e.g. stock browser, safari]
  - Version [e.g. 22]
+
+**Deployment Type**
+Is this issue on SaaS (at https://oneuptime.com) or self hosted (the version that you deployed on your server)? 
 
 **Additional context**
 Add any other context about the problem here.

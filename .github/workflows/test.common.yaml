@@ -6,16 +6,18 @@ on:
     branches-ignore:
       - 'hotfix-*'   # excludes hotfix branches
       - 'release'
-      - 'staging-release'
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      CI_PIPELINE_ID: ${{github.run_number}}
+      BILLING_PRIVATE_KEY: ${{secrets.TEST_BILLING_PRIVATE_KEY}}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          check-latest: true
-      - run: cd Common && npm install
-      - run: cd Model && npm install && npm run test
+          node-version: 18.3.0 
+      - run: cd Common && bash test-setup.sh
+      - run: cd Common && npm install && rm -rf build && npm run test
   

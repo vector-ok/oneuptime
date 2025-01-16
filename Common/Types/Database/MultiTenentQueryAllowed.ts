@@ -1,5 +1,7 @@
+import GenericFunction from "../GenericFunction";
+
 export default (allowed: boolean) => {
-    return (ctr: Function) => {
-        ctr.prototype.isMultiTenantRequestAllowed = allowed;
-    };
+  return (ctr: GenericFunction) => {
+    ctr.prototype.isMultiTenantRequestAllowed = allowed;
+  };
 };

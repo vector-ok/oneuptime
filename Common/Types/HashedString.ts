@@ -1,84 +1,103 @@
-import { FindOperator } from 'typeorm';
-import UUID from '../Utils/UUID';
-import DatabaseProperty from './Database/DatabaseProperty';
-import BadOperationException from './Exception/BadOperationException';
-import ObjectID from './ObjectID';
-import CryptoJS from 'crypto-js';
+import UUID from "../Utils/UUID";
+import DatabaseProperty from "./Database/DatabaseProperty";
+import BadDataException from "./Exception/BadDataException";
+import BadOperationException from "./Exception/BadOperationException";
+import { JSONObject, ObjectType } from "./JSON";
+import ObjectID from "./ObjectID";
+import CryptoJS from "crypto-js";
+import { FindOperator } from "typeorm";
 
 export default class HashedString extends DatabaseProperty {
-    private isHashed: boolean = false;
+  private isHashed: boolean = false;
 
-    private _value: string = '';
-    public get value(): string {
-        return this._value;
-    }
-    public set value(v: string) {
-        this._value = v;
-    }
+  private _value: string = "";
+  public get value(): string {
+    return this._value;
+  }
+  public set value(v: string) {
+    this._value = v;
+  }
 
-    public constructor(value: string, isValueHashed: boolean = false) {
-        super();
-        this.value = value;
-        this.isHashed = isValueHashed;
-    }
+  public constructor(value: string, isValueHashed: boolean = false) {
+    super();
+    this.value = value;
+    this.isHashed = isValueHashed;
+  }
 
-    public override toString(): string {
-        return this.value;
-    }
+  public override toJSON(): JSONObject {
+    return {
+      _type: ObjectType.HashedString,
+      value: (this as HashedString).toString(),
+    };
+  }
 
-    public static generate(): HashedString {
-        return new this(UUID.generate());
-    }
-
-    protected static override toDatabase(
-        value: HashedString | FindOperator<HashedString>
-    ): string | null {
-        if (value) {
-            return value.toString();
-        }
-
-        return null;
+  public static override fromJSON(json: JSONObject): HashedString {
+    if (json["_type"] === ObjectType.HashedString) {
+      return new HashedString((json["value"] as string) || "");
     }
 
-    public isValueHashed(): boolean {
-        return this.isHashed;
+    throw new BadDataException("Invalid JSON: " + JSON.stringify(json));
+  }
+
+  public override toString(): string {
+    return this.value;
+  }
+
+  public static generate(): HashedString {
+    return new this(UUID.generate());
+  }
+
+  protected static override toDatabase(
+    value: HashedString | FindOperator<HashedString>,
+  ): string | null {
+    if (value) {
+      if (typeof value === "string") {
+        value = new HashedString(value);
+      }
+
+      return value.toString();
     }
 
-    public async hashValue(encryptionSecret: ObjectID | null): Promise<string> {
-        if (!this.value) {
-            return '';
-        }
+    return null;
+  }
 
-        if (this.isHashed) {
-            throw new BadOperationException('Value is alredy hashed');
-        }
+  public isValueHashed(): boolean {
+    return this.isHashed;
+  }
 
-        const valueToHash: string = (encryptionSecret || '') + this.value;
-        this.isHashed = true;
-
-        this.value = CryptoJS.SHA256(valueToHash).toString();
-        return this.value;
+  public async hashValue(encryptionSecret: ObjectID | null): Promise<string> {
+    if (!this.value) {
+      return "";
     }
 
-    public static async hashValue(
-        value: string,
-        encryptionSecret: ObjectID | null
-    ): Promise<string> {
-        const hashstring: HashedString = new HashedString(value, false);
-        return await hashstring.hashValue(encryptionSecret);
+    if (this.isHashed) {
+      throw new BadOperationException("Value is already hashed");
     }
 
-    protected static override fromDatabase(
-        _value: string
-    ): HashedString | null {
-        if (_value) {
-            return new HashedString(_value, true);
-        }
+    const valueToHash: string = (encryptionSecret || "") + this.value;
+    this.isHashed = true;
 
-        return null;
+    this.value = CryptoJS.SHA256(valueToHash).toString();
+    return this.value;
+  }
+
+  public static async hashValue(
+    value: string,
+    encryptionSecret: ObjectID | null,
+  ): Promise<string> {
+    const hashstring: HashedString = new HashedString(value, false);
+    return await hashstring.hashValue(encryptionSecret);
+  }
+
+  protected static override fromDatabase(_value: string): HashedString | null {
+    if (_value) {
+      return new HashedString(_value, true);
     }
 
-    public static fromString(value: string): HashedString {
-        return new HashedString(value, false);
-    }
+    return null;
+  }
+
+  public static fromString(value: string): HashedString {
+    return new HashedString(value, false);
+  }
 }

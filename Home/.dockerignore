@@ -5,6 +5,7 @@ node_modules
 
 # dependencies
 /node_modules
+node_modules
 
 .idea
 # testing
@@ -52,4 +53,4 @@ tests/coverage
 
 settings.json
 
-GoSDK/tester
+GoSDK/tester/

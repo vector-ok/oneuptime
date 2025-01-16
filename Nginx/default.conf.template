@@ -1,0 +1,895 @@
+upstream accounts {
+    server ${SERVER_ACCOUNTS_HOSTNAME}:${ACCOUNTS_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream app {
+    server ${SERVER_APP_HOSTNAME}:${APP_PORT} weight=10 max_fails=3 fail_timeout=30s; 
+}
+
+upstream probe-ingest {
+    server ${SERVER_PROBE_INGEST_HOSTNAME}:${PROBE_INGEST_PORT} weight=10 max_fails=3 fail_timeout=30s; 
+}
+
+upstream open-telemetry-ingest {
+    server ${SERVER_OPEN_TELEMETRY_INGEST_HOSTNAME}:${OPEN_TELEMETRY_INGEST_PORT} weight=10 max_fails=3 fail_timeout=30s; 
+}
+
+upstream incoming-request-ingest {
+    server ${SERVER_INCOMING_REQUEST_INGEST_HOSTNAME}:${INCOMING_REQUEST_INGEST_PORT} weight=10 max_fails=3 fail_timeout=30s; 
+}
+
+upstream fluent-ingest {
+    server ${SERVER_FLUENT_INGEST_HOSTNAME}:${FLUENT_INGEST_PORT} weight=10 max_fails=3 fail_timeout=30s; 
+}
+
+upstream dashboard {
+    server ${SERVER_DASHBOARD_HOSTNAME}:${DASHBOARD_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream admin-dashboard {
+    server ${SERVER_ADMIN_DASHBOARD_HOSTNAME}:${ADMIN_DASHBOARD_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream api-reference {
+    server ${SERVER_API_REFERENCE_HOSTNAME}:${API_REFERENCE_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+
+upstream isolated-vm {
+    server ${SERVER_ISOLATED_VM_HOSTNAME}:${ISOLATED_VM_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream worker {
+    server ${SERVER_WORKER_HOSTNAME}:${WORKER_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream workflow {
+    server ${SERVER_WORKFLOW_HOSTNAME}:${WORKFLOW_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream docs {
+    server ${SERVER_DOCS_HOSTNAME}:${DOCS_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream home {
+    server ${SERVER_HOME_HOSTNAME}:${HOME_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream status-page {
+    server ${SERVER_STATUS_PAGE_HOSTNAME}:${STATUS_PAGE_PORT} weight=10 max_fails=3 fail_timeout=30s;
+}
+
+upstream opentelemetry-collector-http {
+    server ${SERVER_OTEL_COLLECTOR_HOSTNAME}:4318;
+}
+
+upstream opentelemetry-collector-grpc {
+    server ${SERVER_OTEL_COLLECTOR_HOSTNAME}:4317;
+}
+
+# Otel Collector
+
+server {
+
+    gzip on;
+    gzip_types      text/plain application/xml application/javascript text/javascript text/css application/json;
+    gzip_proxied    no-cache no-store private expired auth;
+    gzip_min_length 1000;
+   
+    listen 7849;
+    http2  on;
+
+    server_name oneuptime-opentelemetry-collector ${OTEL_COLLECTOR_HOST};
+
+    proxy_busy_buffers_size   512k;
+    proxy_buffers   4 512k;
+    proxy_buffer_size   256k;
+
+    fastcgi_buffers  16 16k;
+    fastcgi_buffer_size  32k;
+
+    location / {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass  http://opentelemetry-collector-http;
+    }
+
+    location ~ /opentelemetry.proto.collector* {
+        grpc_pass grpc://opentelemetry-collector-grpc;
+    }
+
+}
+
+# Fluentd Collector
+
+server {
+
+    gzip on;
+    gzip_types      text/plain application/xml application/javascript text/javascript text/css application/json;
+    gzip_proxied    no-cache no-store private expired auth;
+    gzip_min_length 1000;
+   
+    listen 7849;
+    http2  on;
+
+    server_name oneuptime-fluentd-collector ${FLUENTD_HOST};
+
+    proxy_busy_buffers_size   512k;
+    proxy_buffers   4 512k;
+    proxy_buffer_size   256k;
+
+    fastcgi_buffers  16 16k;
+    fastcgi_buffer_size  32k;
+
+    location /logs {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass  http://fluent-ingest/fluentd/v1/logs;
+    }
+}
+
+# Status Pages
+
+server {
+
+    gzip on;
+    gzip_types      text/plain application/xml application/javascript text/javascript text/css application/json;
+    gzip_proxied    no-cache no-store private expired auth;
+    gzip_min_length 1000;
+   
+    listen 7849 default_server;
+
+    server_name  _; # All domains. 
+
+    proxy_busy_buffers_size   512k;
+    proxy_buffers   4 512k;
+    proxy_buffer_size   256k;
+
+    fastcgi_buffers  16 16k;
+    fastcgi_buffer_size  32k;
+
+
+    location / {
+
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        if ($billing_enabled = true) {
+            return 301 https://$host$request_uri;
+        }
+
+        if ($billing_enabled != true) {
+            proxy_pass http://status-page;
+        }
+        
+    }
+
+    location /status-page {
+
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        if ($billing_enabled = true) {
+            return 301 https://$host$request_uri;
+        }
+
+        if ($billing_enabled != true) {
+            proxy_pass http://status-page;
+        }
+    }
+
+    location /status-page-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/status-page/;
+    }
+
+    location /status-page-sso-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/identity/status-page-sso/;
+    }
+
+    location /status-page-identity-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/identity/status-page/;
+    }
+
+    # Acme Verification.
+    location /.well-known {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass  http://app/api/status-page/.well-known;
+    }
+
+}
+
+# 
+
+server {
+
+    gzip on;
+    gzip_types      text/plain application/xml application/javascript text/javascript text/css application/json;
+    gzip_proxied    no-cache no-store private expired auth;
+    gzip_min_length 1000;
+
+    listen 7850 ssl default_server; # Port HTTPS
+
+
+    ssl_certificate /etc/nginx/certs/StatusPageCerts/$ssl_server_name.crt; 
+    ssl_certificate_key /etc/nginx/certs/StatusPageCerts/$ssl_server_name.key;
+
+    server_name  _; # All domains. 
+
+    proxy_busy_buffers_size   512k;
+    proxy_buffers   4 512k;
+    proxy_buffer_size   256k;
+
+    fastcgi_buffers  16 16k;
+    fastcgi_buffer_size  32k;
+
+    location / {
+
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://status-page;
+
+        
+    }
+
+    location /status-page-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/status-page/;
+    }
+
+    location /status-page-sso-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/identity/status-page-sso/;
+    }
+
+    location /status-page-identity-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/identity/status-page/;
+    }
+
+    location /status-page {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://status-page;
+    }
+}
+
+server {
+
+    gzip on;
+    gzip_types      text/plain application/xml application/javascript text/javascript text/css application/json;
+    gzip_proxied    no-cache no-store private expired auth;
+    gzip_min_length 1000;
+    
+    listen 7849;
+    http2  on;
+
+    server_name localhost ingress ${HOST}; #All domains
+
+    proxy_busy_buffers_size   512k;
+    proxy_buffers   4 512k;
+    proxy_buffer_size   256k;
+
+    fastcgi_buffers  16 16k;
+    fastcgi_buffer_size  32k;
+
+    set $billing_enabled ${BILLING_ENABLED};
+
+    location / {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $server_name;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # If billing_enabled is true then proxy to home otherwise to dashboard because we dont need marketing paages for on-prem install.
+        if ($billing_enabled = true) {
+            proxy_pass http://home;
+        }
+
+        if ($billing_enabled != true) {
+            proxy_pass http://dashboard;
+        }
+    }
+
+
+    location /status-page-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/status-page/;
+    }
+
+    location /status-page-sso-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/identity/status-page-sso/;
+    }
+
+    location /status-page-identity-api/ {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://app/api/identity/status-page/;
+    }
+    
+
+    location /accounts {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://accounts;
+    }
+
+     location /fluent-ingest {
+
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_pass http://fluent-ingest;
+    }
+
+
+    location /open-telemetry-ingest {
+
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_pass http://open-telemetry-ingest;
+    }
+
+     location /incoming-request-ingest {
+
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_pass http://incoming-request-ingest;
+    }
+
+    location /otlp/ {
+
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+
+        proxy_pass http://opentelemetry-collector-http/;
+    }
+
+
+    location ~ /opentelemetry.proto.collector* {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        grpc_pass grpc://opentelemetry-collector-grpc;
+    }
+
+    location /notification {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://app/api/notification;
+    }
+
+    location /fluentd/logs {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass  http://fluent-ingest/fluentd/v1/logs;
+    }
+
+    location /probe-ingest {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://probe-ingest;
+
+        client_max_body_size 50M;
+    }
+
+    # For backward compatibility with probes that are already deployed
+    location /ingestor {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://probe-ingest;
+
+        client_max_body_size 50M;
+    }
+
+    location /server-monitor {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://probe-ingest/server-monitor;
+
+        client_max_body_size 50M;
+    }
+
+    location /dashboard {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://dashboard;
+    }
+
+
+    location /admin {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://admin-dashboard;
+    }
+
+    location /isolated-vm {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://isolated-vm;
+    }
+
+    location /worker {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://worker;
+    }
+
+    location /status-page {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_pass http://status-page;
+    }
+
+    location /identity {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://app/api/identity;
+    }
+
+    location /reference {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://api-reference;
+    }
+
+    location /docs {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://docs;
+    }
+
+    location /file {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://app/api/file;
+
+        client_max_body_size 50M;
+    }
+
+    location /api {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://app/api;
+
+        client_max_body_size 50M;
+    }
+
+    location /realtime {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://app;
+
+        client_max_body_size 50M;
+    }
+
+    location /analytics-api {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://app;
+
+        client_max_body_size 50M;
+    }
+
+
+    location /heartbeat {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://incoming-request-ingest/incoming-request;
+
+        client_max_body_size 50M;
+    }
+
+
+    location /workflow {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://workflow;
+
+        client_max_body_size 50M;
+    }
+
+    location /l/ { # Short URL for Link Shortener
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://app/api/short-link/redirect-to-shortlink/;
+
+        client_max_body_size 50M;
+    }
+
+    location /workers {
+        # This is for nginx not to crash when service is not available. 
+        resolver 127.0.0.1 valid=30s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme; 
+
+        # enable WebSockets (for ws://sockjs not connected error in the accounts source: https://stackoverflow.com/questions/41381444/websocket-connection-failed-error-during-websocket-handshake-unexpected-respon)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://app/api/workers;
+    }
+}

@@ -1,5 +1,9 @@
 {
     "preset": "ts-jest",
+    "testPathIgnorePatterns": [
+        "node_modules",
+        "dist"
+    ],
     "verbose": true,
     "globals": {
         "ts-jest": {
@@ -7,15 +11,24 @@
             "babelConfig": false
         }
     },
-    "moduleFileExtensions": ["ts", "js", "json"],
+    "moduleFileExtensions": [
+        "ts",
+        "js",
+        "json"
+    ],
     "transform": {
         ".(ts|tsx)": "ts-jest"
     },
     "testEnvironment": "node",
-    "collectCoverage": true,
-    "coverageReporters": ["text", "html"],
+    "collectCoverage": false,
+    "coverageReporters": [
+        "text",
+        "lcov"
+    ],
     "testRegex": "./Tests/(.*).test.ts",
-    "collectCoverageFrom": ["./**/*.(tsx||ts)"],
+    "collectCoverageFrom": [
+        "./**/*.(tsx||ts)"
+    ],
     "coverageThreshold": {
         "global": {
             "lines": 0,

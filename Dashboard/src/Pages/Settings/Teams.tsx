@@ -1,102 +1,95 @@
-import Route from 'Common/Types/API/Route';
-import Page from 'CommonUI/src/Components/Page/Page';
-import React, { FunctionComponent, ReactElement } from 'react';
-import PageMap from '../../Utils/PageMap';
-import RouteMap from '../../Utils/RouteMap';
-import PageComponentProps from '../PageComponentProps';
-import DashboardSideMenu from './SideMenu';
-import ModelTable from 'CommonUI/src/Components/ModelTable/ModelTable';
-import Team from 'Model/Models/Team';
-import FieldType from 'CommonUI/src/Components/Types/FieldType';
-import FormFieldSchemaType from 'CommonUI/src/Components/Forms/Types/FormFieldSchemaType';
-import { IconProp } from 'CommonUI/src/Components/Icon/Icon';
+import DashboardNavigation from "../../Utils/Navigation";
+import { RouteUtil } from "../../Utils/RouteMap";
+import PageComponentProps from "../PageComponentProps";
+import FormFieldSchemaType from "Common/UI/Components/Forms/Types/FormFieldSchemaType";
+import ModelTable from "Common/UI/Components/ModelTable/ModelTable";
+import FieldType from "Common/UI/Components/Types/FieldType";
+import Team from "Common/Models/DatabaseModels/Team";
+import React, { Fragment, FunctionComponent, ReactElement } from "react";
 
 const Teams: FunctionComponent<PageComponentProps> = (
-    props: PageComponentProps
+  props: PageComponentProps,
 ): ReactElement => {
-    return (
-        <Page
-            title={'Project Settings'}
-            breadcrumbLinks={[
-                {
-                    title: 'Project',
-                    to: RouteMap[PageMap.HOME] as Route,
-                },
-                {
-                    title: 'Settings',
-                    to: RouteMap[PageMap.SETTINGS] as Route,
-                },
-                {
-                    title: 'Teams',
-                    to: RouteMap[PageMap.SETTINGS_TEAMS] as Route,
-                },
-            ]}
-            sideMenu={<DashboardSideMenu />}
-        >
-            <ModelTable<Team>
-                modelType={Team}
-                id="teams-table"
-                isDeleteable={false}
-                isEditable={true}
-                isCreateable={true}
-                isViewable={true}
-                cardProps={{
-                    icon: IconProp.User,
-                    title: 'Teams',
-                    description:
-                        'Here is a list of all the teams in this project.',
-                }}
-                noItemsMessage={'No teams found.'}
-                query={{
-                    projectId: props.currentProject?._id,
-                }}
-                formFields={[
-                    {
-                        field: {
-                            name: true,
-                        },
-                        title: 'Name',
-                        fieldType: FormFieldSchemaType.Text,
-                        required: true,
-                        placeholder: 'Team Name',
-                        validation: {
-                            minLength: 2,
-                        },
-                    },
-                    {
-                        field: {
-                            description: true,
-                        },
-                        title: 'Description',
-                        fieldType: FormFieldSchemaType.LongText,
-                        required: true,
-                        placeholder: 'Team Description',
-                    },
-                ]}
-                showRefreshButton={true}
-                showFilterButton={true}
-                viewPageRoute={props.pageRoute}
-                columns={[
-                    {
-                        field: {
-                            name: true,
-                        },
-                        title: 'Name',
-                        type: FieldType.Text,
-                        isFilterable: true,
-                    },
-                    {
-                        field: {
-                            description: true,
-                        },
-                        title: 'Description',
-                        type: FieldType.Text,
-                        isFilterable: true,
-                    },
-                ]}
-            />
-        </Page>
-    );
+  return (
+    <Fragment>
+      <ModelTable<Team>
+        modelType={Team}
+        id="teams-table"
+        name="Settings > Teams"
+        isDeleteable={false}
+        isEditable={false}
+        isCreateable={true}
+        isViewable={true}
+        cardProps={{
+          title: "Teams",
+          description: "Here is a list of all the teams in this project.",
+        }}
+        noItemsMessage={"No teams found."}
+        query={{
+          projectId: DashboardNavigation.getProjectId()!,
+        }}
+        showViewIdButton={true}
+        formFields={[
+          {
+            field: {
+              name: true,
+            },
+            title: "Name",
+            fieldType: FormFieldSchemaType.Text,
+            required: true,
+            placeholder: "Team Name",
+            validation: {
+              minLength: 2,
+            },
+          },
+          {
+            field: {
+              description: true,
+            },
+            title: "Description",
+            fieldType: FormFieldSchemaType.LongText,
+            required: false,
+            placeholder: "Team Description",
+          },
+        ]}
+        showRefreshButton={true}
+        viewPageRoute={RouteUtil.populateRouteParams(props.pageRoute)}
+        filters={[
+          {
+            field: {
+              name: true,
+            },
+            title: "Name",
+            type: FieldType.Text,
+          },
+          {
+            field: {
+              description: true,
+            },
+            title: "Description",
+            type: FieldType.Text,
+          },
+        ]}
+        columns={[
+          {
+            field: {
+              name: true,
+            },
+            title: "Name",
+            type: FieldType.Text,
+          },
+          {
+            field: {
+              description: true,
+            },
+            noValueMessage: "-",
+            title: "Description",
+            type: FieldType.Text,
+          },
+        ]}
+      />
+    </Fragment>
+  );
 };
 
 export default Teams;

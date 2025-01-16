@@ -1,9 +1,12 @@
-import IP from './IP';
-import IPType from './IPType';
+import BadDataException from "../Exception/BadDataException";
+import IP from "./IP";
 
 export default class IPv4 extends IP {
-    public constructor(ip: string) {
-        // TODO: Validate if this is actually ipv4 before calling super()
-        super(ip, IPType.IPv4);
+  public constructor(ip: string) {
+    super(ip);
+
+    if (!this.isIPv4()) {
+      throw new BadDataException("IP is not a valid IPv4 address");
     }
+  }
 }
