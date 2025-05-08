@@ -23,6 +23,7 @@ const APIKeys: FunctionComponent<PageComponentProps> = (): ReactElement => {
         isCreateable={true}
         isViewable={true}
         singularName="Ingestion Key"
+        userPreferencesKey="telemetry-ingestion-keys-table"
         cardProps={{
           title: "Telemetry Ingestion Keys",
           description:

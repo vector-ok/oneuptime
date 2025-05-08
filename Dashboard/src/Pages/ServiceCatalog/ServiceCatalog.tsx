@@ -38,6 +38,7 @@ const ServiceCatalogPage: FunctionComponent<
       <ModelTable<ServiceCatalog>
         modelType={ServiceCatalog}
         id="service-catalog-table"
+        userPreferencesKey="service-catalog-table"
         isDeleteable={false}
         isEditable={false}
         isCreateable={true}

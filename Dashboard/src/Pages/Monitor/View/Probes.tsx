@@ -15,7 +15,6 @@ import FormFieldSchemaType from "Common/UI/Components/Forms/Types/FormFieldSchem
 import Modal, { ModalWidth } from "Common/UI/Components/Modal/Modal";
 import ModelTable from "Common/UI/Components/ModelTable/ModelTable";
 import ProbeElement from "Common/UI/Components/Probe/Probe";
-import SimpleLogViewer from "Common/UI/Components/SimpleLogViewer/SimpleLogViewer";
 import FieldType from "Common/UI/Components/Types/FieldType";
 import { GetReactElementFunction } from "Common/UI/Types/FunctionTypes";
 import API from "Common/UI/Utils/API/API";
@@ -32,13 +31,15 @@ import React, {
   useState,
 } from "react";
 import useAsyncEffect from "use-async-effect";
+import SummaryInfo from "../../../Components/Monitor/SummaryView/SummaryInfo";
+import ProbeMonitorResponse from "Common/Types/Probe/ProbeMonitorResponse";
 
 const MonitorProbes: FunctionComponent<
   PageComponentProps
 > = (): ReactElement => {
   const modelId: ObjectID = Navigation.getLastParamAsObjectID(1);
   const [showViewLogsModal, setShowViewLogsModal] = useState<boolean>(false);
-  const [logs, setLogs] = useState<string>("");
+  const [logs, setLogs] = useState<Array<ProbeMonitorResponse>>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [error, setError] = useState<string>("");
@@ -123,6 +124,7 @@ const MonitorProbes: FunctionComponent<
 
           return Promise.resolve(item);
         }}
+        userPreferencesKey="monitor-probes-table"
         id="probes-table"
         name="Monitor > Monitor Probes"
         isDeleteable={false}
@@ -141,7 +143,7 @@ const MonitorProbes: FunctionComponent<
         }}
         actionButtons={[
           {
-            title: "View Logs",
+            title: "View Summary",
             buttonStyleType: ButtonStyleType.NORMAL,
             icon: IconProp.List,
             onClick: async (
@@ -149,9 +151,12 @@ const MonitorProbes: FunctionComponent<
               onCompleteAction: VoidFunction,
             ) => {
               setLogs(
-                item["lastMonitoringLog"]
-                  ? JSON.stringify(item["lastMonitoringLog"], null, 2)
-                  : "Not monitored yet",
+                item["lastMonitoringLog"] &&
+                  Object.keys(item["lastMonitoringLog"]).length > 0
+                  ? (Object.values(
+                      item["lastMonitoringLog"],
+                    ) as Array<ProbeMonitorResponse>)
+                  : [],
               );
               setShowViewLogsModal(true);
 
@@ -265,8 +270,8 @@ const MonitorProbes: FunctionComponent<
       {getPageContent()}
       {showViewLogsModal && (
         <Modal
-          title={"Monitoring Logs"}
-          description="Here are the latest monitoring log for this resource."
+          title={"Monitoring Summary"}
+          description="Here are the latest monitoring summary for this resource."
           isLoading={false}
           modalWidth={ModalWidth.Large}
           onSubmit={() => {
@@ -275,11 +280,10 @@ const MonitorProbes: FunctionComponent<
           submitButtonText={"Close"}
           submitButtonStyleType={ButtonStyleType.NORMAL}
         >
-          <SimpleLogViewer>
-            {logs.split("\n").map((log: string, i: number) => {
-              return <div key={i}>{log}</div>;
-            })}
-          </SimpleLogViewer>
+          <SummaryInfo
+            monitorType={monitorType!}
+            probeMonitorResponses={logs}
+          />
         </Modal>
       )}
     </Fragment>

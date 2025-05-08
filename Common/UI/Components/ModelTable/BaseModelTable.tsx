@@ -86,6 +86,9 @@ import React, {
 } from "react";
 import TableViewElement from "./TableView";
 import TableView from "../../../Models/DatabaseModels/TableView";
+import UserPreferences, {
+  UserPreferenceType,
+} from "../../../Utils/UserPreferences";
 
 export enum ShowAs {
   Table,
@@ -219,6 +222,11 @@ export interface BaseTableProps<
   onFilterApplied?: ((isFilterApplied: boolean) => void) | undefined;
 
   formSummary?: FormSummaryConfig | undefined;
+
+  // this key is used to save table user preferences in local storage.
+  // If you provide this key, the table will save the user preferences in local storage.
+  // If you do not provide this key, the table will not save the user preferences in local storage.
+  userPreferencesKey: string;
 }
 
 export interface ComponentProps<
@@ -289,6 +297,21 @@ const BaseModelTable: <TBaseModel extends BaseModel | AnalyticsBaseModel>(
     }
   }, [props.modelType]);
 
+  const getItemsOnPage: () => number = (): number => {
+    if (props.userPreferencesKey) {
+      const itemsOnPage: number | null =
+        UserPreferences.getUserPreferenceByTypeAsNumber({
+          userPreferenceType: UserPreferenceType.BaseModelTablePageSize,
+          key: props.userPreferencesKey,
+        });
+      if (itemsOnPage) {
+        return itemsOnPage;
+      }
+    }
+
+    return props.initialItemsOnPage || 10;
+  };
+
   const [orderedStatesListNewItemOrder, setOrderedStatesListNewItemOrder] =
     useState<number | null>(null);
 
@@ -320,9 +343,18 @@ const BaseModelTable: <TBaseModel extends BaseModel | AnalyticsBaseModel>(
   const [currentDeleteableItem, setCurrentDeleteableItem] =
     useState<TBaseModel | null>(null);
 
-  const [itemsOnPage, setItemsOnPage] = useState<number>(
-    props.initialItemsOnPage || 10,
-  );
+  const [itemsOnPage, setItemsOnPage] = useState<number>(getItemsOnPage());
+
+  useEffect(() => {
+    // update items on page in localstorage.
+    if (itemsOnPage && props.userPreferencesKey) {
+      UserPreferences.saveUserPreferenceByTypeAsNumber({
+        userPreferenceType: UserPreferenceType.BaseModelTablePageSize,
+        key: props.userPreferencesKey,
+        value: itemsOnPage,
+      });
+    }
+  }, [itemsOnPage]);
 
   const [fields, setFields] = useState<Array<Field<TBaseModel>>>([]);
 
