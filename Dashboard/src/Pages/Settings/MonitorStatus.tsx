@@ -24,6 +24,7 @@ const Monitors: FunctionComponent<PageComponentProps> = (
           projectId: ProjectUtil.getCurrentProjectId()!,
         }}
         id="monitor-status-table"
+        userPreferencesKey="monitor-status-table"
         name="Settings > Monitor Status"
         isDeleteable={true}
         isEditable={true}

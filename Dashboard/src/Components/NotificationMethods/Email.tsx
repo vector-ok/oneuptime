@@ -42,6 +42,7 @@ const Email: () => JSX.Element = (): ReactElement => {
   return (
     <>
       <ModelTable<UserEmail>
+        userPreferencesKey={"user-email-table"}
         modelType={UserEmail}
         query={{
           projectId: ProjectUtil.getCurrentProjectId()!,

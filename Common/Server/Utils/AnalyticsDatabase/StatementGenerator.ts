@@ -20,6 +20,8 @@ import Includes from "Common/Types/BaseDatabase/Includes";
 import IsNull from "Common/Types/BaseDatabase/IsNull";
 import LessThan from "Common/Types/BaseDatabase/LessThan";
 import LessThanOrEqual from "Common/Types/BaseDatabase/LessThanOrEqual";
+import GreaterThanOrNull from "../../../Types/BaseDatabase/GreaterThanOrNull";
+import LessThanOrNull from "../../../Types/BaseDatabase/LessThanOrNull";
 import NotEqual from "Common/Types/BaseDatabase/NotEqual";
 import Search from "Common/Types/BaseDatabase/Search";
 import SortOrder from "Common/Types/BaseDatabase/SortOrder";
@@ -382,6 +384,20 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
             type: tableColumn.type,
           }}`,
         );
+      } else if (value instanceof LessThanOrNull) {
+        whereStatement.append(
+          SQL`AND (${key} <= ${{
+            value: value,
+            type: tableColumn.type,
+          }} OR ${key} IS NULL)`,
+        );
+      } else if (value instanceof GreaterThanOrNull) {
+        whereStatement.append(
+          SQL`AND (${key} >= ${{
+            value: value,
+            type: tableColumn.type,
+          }} OR ${key} IS NULL)`,
+        );
       } else if (value instanceof GreaterThanOrEqual) {
         whereStatement.append(
           SQL`AND ${key} >= ${{
@@ -735,8 +751,8 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
             )
             ENGINE = `,
       )
-      .append(tableEngineStatement).append(SQL`
-        PARTITION BY ${partitionKey}
+      .append(tableEngineStatement).append(`
+        PARTITION BY (${partitionKey})
         `).append(SQL`
             PRIMARY KEY (`);
 

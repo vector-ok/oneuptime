@@ -31,6 +31,7 @@ import logger from "../Utils/Logger";
 import OnCallDutyPolicyFeedService from "./OnCallDutyPolicyFeedService";
 import { OnCallDutyPolicyFeedEventType } from "../../Models/DatabaseModels/OnCallDutyPolicyFeed";
 import { Green500 } from "../../Types/BrandColors";
+import OnCallDutyPolicyTimeLogService from "./OnCallDutyPolicyTimeLogService";
 
 export class Service extends DatabaseService<OnCallDutyPolicySchedule> {
   private layerUtil = new LayerUtil();
@@ -228,6 +229,25 @@ export class Service extends DatabaseService<OnCallDutyPolicySchedule> {
               NotificationSettingEventType.SEND_WHEN_USER_IS_NO_LONGER_ACTIVE_ON_ON_CALL_ROSTER,
           });
 
+          // add end log for user.
+          OnCallDutyPolicyTimeLogService.endTimeLogForUser({
+            userId: sendEmailToUserId,
+            onCallDutyPolicyScheduleId: data.scheduleId,
+            onCallDutyPolicyEscalationRuleId:
+              escalationRule.onCallDutyPolicyEscalationRule!.id!,
+            onCallDutyPolicyId: escalationRule.onCallDutyPolicy!.id!,
+            projectId: projectId,
+            endsAt: OneUptimeDate.getCurrentDate(),
+          }).catch((err: Error) => {
+            logger.error(
+              "Error ending time log for user: " +
+                sendEmailToUserId.toString() +
+                " for schedule: " +
+                data.scheduleId.toString(),
+            );
+            logger.error(err);
+          });
+
           const onCallDutyPolicyId: ObjectID =
             escalationRule.onCallDutyPolicy!.id!;
 
@@ -314,6 +334,25 @@ export class Service extends DatabaseService<OnCallDutyPolicySchedule> {
             callRequestMessage: callMessage,
             eventType:
               NotificationSettingEventType.SEND_WHEN_USER_IS_ON_CALL_ROSTER,
+          });
+
+          // add start log for user.
+          OnCallDutyPolicyTimeLogService.startTimeLogForUser({
+            userId: sendEmailToUserId,
+            onCallDutyPolicyScheduleId: data.scheduleId,
+            onCallDutyPolicyEscalationRuleId:
+              escalationRule.onCallDutyPolicyEscalationRule!.id!,
+            onCallDutyPolicyId: escalationRule.onCallDutyPolicy!.id!,
+            projectId: projectId,
+            startsAt: OneUptimeDate.getCurrentDate(),
+          }).catch((err: Error) => {
+            logger.error(
+              "Error starting time log for user: " +
+                sendEmailToUserId.toString() +
+                " for schedule: " +
+                data.scheduleId.toString(),
+            );
+            logger.error(err);
           });
 
           const onCallDutyPolicyId: ObjectID =

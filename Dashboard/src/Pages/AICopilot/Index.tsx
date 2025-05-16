@@ -48,6 +48,7 @@ const CodeRepositoryPage: FunctionComponent<
         isDeleteable={false}
         isEditable={false}
         isCreateable={true}
+        userPreferencesKey="reliability-copilot-code-repositories-table"
         createVerb="Add"
         name="Git Repositories"
         isViewable={true}

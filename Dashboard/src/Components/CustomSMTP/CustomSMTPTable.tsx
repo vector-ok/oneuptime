@@ -41,6 +41,7 @@ const CustomSMTPTable: FunctionComponent = (): ReactElement => {
       <ModelTable<ProjectSmtpConfig>
         modelType={ProjectSmtpConfig}
         id="smtp-table"
+        userPreferencesKey="smtp-table"
         actionButtons={[
           {
             title: "Send Test Email",

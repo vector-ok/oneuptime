@@ -18,6 +18,7 @@ const AlertsPage: FunctionComponent<PageComponentProps> = (): ReactElement => {
         modelType={AlertState}
         id="alert-state-table"
         name="Settings > Alert State"
+        userPreferencesKey="alert-state-table"
         isDeleteable={true}
         isEditable={true}
         isCreateable={true}

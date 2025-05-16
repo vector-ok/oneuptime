@@ -34,6 +34,7 @@ const Delete: FunctionComponent<PageComponentProps> = (): ReactElement => {
           id="workflow-logs-table"
           isDeleteable={false}
           isEditable={false}
+          userPreferencesKey="workflow-logs-table"
           isCreateable={false}
           name="Workflow Logs"
           query={{
