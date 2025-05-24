@@ -7,13 +7,14 @@ import ConfirmModal from "../Modal/ConfirmModal";
 import FieldType from "../Types/FieldType";
 import Column from "./Types/Column";
 import Columns from "./Types/Columns";
-import Color from "Common/Types/Color";
-import OneUptimeDate from "Common/Types/Date";
-import GenericObject from "Common/Types/GenericObject";
-import IconProp from "Common/Types/Icon/IconProp";
+import Color from "../../../Types/Color";
+import OneUptimeDate from "../../../Types/Date";
+import GenericObject from "../../../Types/GenericObject";
+import IconProp from "../../../Types/Icon/IconProp";
 import get from "lodash/get";
 import React, { ReactElement, useState } from "react";
 import { Draggable, DraggableProvided } from "react-beautiful-dnd";
+import LongTextViewer from "../LongText/LongTextViewer";
 
 export interface ComponentProps<T extends GenericObject> {
   item: T;
@@ -146,6 +147,14 @@ const TableRow: TableRowFunction = <T extends GenericObject>(
                         <ColorInput value={props.item[column.key] as Color} />
                       ) : (
                         column.noValueMessage || "0%"
+                      )
+                    ) : column.type === FieldType.LongText ? (
+                      props.item[column.key] ? (
+                        <LongTextViewer
+                          text={props.item[column.key] as string}
+                        />
+                      ) : (
+                        column.noValueMessage || ""
                       )
                     ) : column.type === FieldType.Boolean ? (
                       props.item[column.key] ? (

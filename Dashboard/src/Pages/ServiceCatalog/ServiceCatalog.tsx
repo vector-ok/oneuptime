@@ -38,6 +38,7 @@ const ServiceCatalogPage: FunctionComponent<
       <ModelTable<ServiceCatalog>
         modelType={ServiceCatalog}
         id="service-catalog-table"
+        userPreferencesKey="service-catalog-table"
         isDeleteable={false}
         isEditable={false}
         isCreateable={true}
@@ -102,7 +103,7 @@ const ServiceCatalogPage: FunctionComponent<
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {
@@ -144,7 +145,7 @@ const ServiceCatalogPage: FunctionComponent<
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

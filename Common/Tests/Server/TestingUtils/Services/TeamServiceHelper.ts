@@ -1,5 +1,5 @@
-import ObjectID from "Common/Types/ObjectID";
-import Team from "Common/Models/DatabaseModels/Team";
+import ObjectID from "../../../../Types/ObjectID";
+import Team from "../../../../Models/DatabaseModels/Team";
 import Faker from "../../../../Utils/Faker";
 import DatabaseCommonInteractionProps from "../../../../Types/BaseDatabase/DatabaseCommonInteractionProps";
 import TeamService from "../../../../Server/Services/TeamService";

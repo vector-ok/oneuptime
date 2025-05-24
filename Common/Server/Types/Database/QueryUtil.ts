@@ -1,25 +1,27 @@
 import Query from "./Query";
 import QueryHelper from "./QueryHelper";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import EqualToOrNull from "Common/Types/BaseDatabase/EqualToOrNull";
-import GreaterThan from "Common/Types/BaseDatabase/GreaterThan";
-import GreaterThanOrEqual from "Common/Types/BaseDatabase/GreaterThanOrEqual";
-import InBetween from "Common/Types/BaseDatabase/InBetween";
-import Includes from "Common/Types/BaseDatabase/Includes";
-import IsNull from "Common/Types/BaseDatabase/IsNull";
-import LessThan from "Common/Types/BaseDatabase/LessThan";
-import LessThanOrEqual from "Common/Types/BaseDatabase/LessThanOrEqual";
-import NotEqual from "Common/Types/BaseDatabase/NotEqual";
-import NotNull from "Common/Types/BaseDatabase/NotNull";
-import Search from "Common/Types/BaseDatabase/Search";
-import { TableColumnMetadata } from "Common/Types/Database/TableColumn";
-import TableColumnType from "Common/Types/Database/TableColumnType";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
-import Typeof from "Common/Types/Typeof";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import EqualToOrNull from "../../../Types/BaseDatabase/EqualToOrNull";
+import GreaterThan from "../../../Types/BaseDatabase/GreaterThan";
+import GreaterThanOrEqual from "../../../Types/BaseDatabase/GreaterThanOrEqual";
+import InBetween from "../../../Types/BaseDatabase/InBetween";
+import Includes from "../../../Types/BaseDatabase/Includes";
+import IsNull from "../../../Types/BaseDatabase/IsNull";
+import LessThan from "../../../Types/BaseDatabase/LessThan";
+import LessThanOrEqual from "../../../Types/BaseDatabase/LessThanOrEqual";
+import NotEqual from "../../../Types/BaseDatabase/NotEqual";
+import NotNull from "../../../Types/BaseDatabase/NotNull";
+import Search from "../../../Types/BaseDatabase/Search";
+import { TableColumnMetadata } from "../../../Types/Database/TableColumn";
+import TableColumnType from "../../../Types/Database/TableColumnType";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
+import Typeof from "../../../Types/Typeof";
 import { FindOperator } from "typeorm/find-options/FindOperator";
 import { CompareType } from "../../../Types/Database/CompareBase";
 import CaptureSpan from "../../Utils/Telemetry/CaptureSpan";
+import LessThanOrNull from "../../../Types/BaseDatabase/LessThanOrNull";
+import GreaterThanOrNull from "../../../Types/BaseDatabase/GreaterThanOrNull";
 
 export default class QueryUtil {
   @CaptureSpan()
@@ -159,6 +161,22 @@ export default class QueryUtil {
       ) {
         query[key] = QueryHelper.lessThanEqualTo(
           (query[key] as LessThanOrEqual<CompareType>).toString() as any,
+        ) as any;
+      } else if (
+        query[key] &&
+        query[key] instanceof LessThanOrNull &&
+        tableColumnMetadata
+      ) {
+        query[key] = QueryHelper.lessThanOrNull(
+          (query[key] as LessThanOrNull<CompareType>).toString() as any,
+        ) as any;
+      } else if (
+        query[key] &&
+        query[key] instanceof GreaterThanOrNull &&
+        tableColumnMetadata
+      ) {
+        query[key] = QueryHelper.greaterThanOrNull(
+          (query[key] as LessThanOrNull<CompareType>).toString() as any,
         ) as any;
       } else if (
         query[key] &&

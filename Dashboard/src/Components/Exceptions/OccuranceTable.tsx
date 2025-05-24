@@ -18,6 +18,7 @@ const OccouranceTable: FunctionComponent<ComponentProps> = (
     <Fragment>
       <div className="rounded">
         <AnalyticsModelTable<ExceptionInstance>
+          userPreferencesKey="exception-instance-table"
           modelType={ExceptionInstance}
           id="traces-table"
           isDeleteable={false}

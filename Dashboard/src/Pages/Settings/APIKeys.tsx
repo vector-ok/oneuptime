@@ -17,6 +17,7 @@ const APIKeys: FunctionComponent<PageComponentProps> = (): ReactElement => {
         }}
         id="api-keys-table"
         name="Settings > API Keys"
+        userPreferencesKey="api-keys-table"
         isDeleteable={false}
         isEditable={false}
         showViewIdButton={false}
@@ -102,7 +103,7 @@ const APIKeys: FunctionComponent<PageComponentProps> = (): ReactElement => {
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

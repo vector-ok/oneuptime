@@ -1,6 +1,6 @@
 import UILink from "../Link/Link";
-import Route from "Common/Types/API/Route";
-import URL from "Common/Types/API/URL";
+import Route from "../../../Types/API/Route";
+import URL from "../../../Types/API/URL";
 import React, { FunctionComponent, ReactElement } from "react";
 
 export interface FooterLink {
@@ -44,7 +44,7 @@ const Footer: FunctionComponent<ComponentProps> = (
                 );
               })}
           </div>
-          <div className="mt-8 md:order-1 md:mt-0">
+          <div className="mt-8 md:order-1 md:mt-0 hidden md:block">
             {props.copyright && (
               <p className="text-center text-base text-gray-400">
                 &copy; {props.copyright}
