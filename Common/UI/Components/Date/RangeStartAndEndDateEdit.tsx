@@ -1,29 +1,29 @@
 import React, { FunctionComponent, ReactElement } from "react";
-import DashboardStartAndEndDate from "../Types/DashboardStartAndEndDate";
+import RangeStartAndEndDateTime from "../../../Types/Time/RangeStartAndEndDateTime";
 import StartAndEndDate, {
   StartAndEndDateType,
-} from "Common/UI/Components/Date/StartAndEndDate";
-import InBetween from "Common/Types/BaseDatabase/InBetween";
-import DashboardStartAndEndDateRange from "../Types/DashboardStartAndEndDateRange";
+} from "../../../UI/Components/Date/StartAndEndDate";
+import InBetween from "../../../Types/BaseDatabase/InBetween";
+import TimeRange from "../../../Types/Time/TimeRange";
 import Dropdown, {
   DropdownOption,
   DropdownValue,
-} from "Common/UI/Components/Dropdown/Dropdown";
-import DropdownUtil from "Common/UI/Utils/Dropdown";
+} from "../../../UI/Components/Dropdown/Dropdown";
+import DropdownUtil from "../../../UI/Utils/Dropdown";
 
 export interface ComponentProps {
-  value?: DashboardStartAndEndDate | undefined;
-  onChange: (startAndEndDate: DashboardStartAndEndDate) => void;
+  value?: RangeStartAndEndDateTime | undefined;
+  onChange: (startAndEndDate: RangeStartAndEndDateTime) => void;
 }
 
 const DashboardStartAndEndDateEditElement: FunctionComponent<ComponentProps> = (
   props: ComponentProps,
 ): ReactElement => {
   const dropdownOptions: DropdownOption[] =
-    DropdownUtil.getDropdownOptionsFromEnum(DashboardStartAndEndDateRange);
+    DropdownUtil.getDropdownOptionsFromEnum(TimeRange);
   const defaultDropdownOption: DropdownOption =
     dropdownOptions.find((option: DropdownOption) => {
-      return option.value === DashboardStartAndEndDateRange.PAST_ONE_HOUR;
+      return option.value === TimeRange.PAST_ONE_HOUR;
     }) || dropdownOptions[0]!;
   const selectedDropdownnOption: DropdownOption =
     dropdownOptions.find((option: DropdownOption) => {
@@ -36,13 +36,13 @@ const DashboardStartAndEndDateEditElement: FunctionComponent<ComponentProps> = (
         value={selectedDropdownnOption}
         onChange={(range: DropdownValue | Array<DropdownValue> | null) => {
           props.onChange({
-            range: range as DashboardStartAndEndDateRange,
+            range: range as TimeRange,
           });
         }}
         options={dropdownOptions}
       />
       {/* Start and End Date */}
-      {props.value?.range === DashboardStartAndEndDateRange.CUSTOM && (
+      {props.value?.range === TimeRange.CUSTOM && (
         <StartAndEndDate
           type={StartAndEndDateType.DateTime}
           value={props.value?.startAndEndDate || undefined}
@@ -50,7 +50,7 @@ const DashboardStartAndEndDateEditElement: FunctionComponent<ComponentProps> = (
           onValueChanged={(startAndEndDate: InBetween<Date> | null) => {
             if (startAndEndDate) {
               props.onChange({
-                range: DashboardStartAndEndDateRange.CUSTOM,
+                range: TimeRange.CUSTOM,
                 startAndEndDate,
               });
             }

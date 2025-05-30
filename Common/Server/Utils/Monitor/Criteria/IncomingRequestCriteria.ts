@@ -1,17 +1,17 @@
 import logger from "../../../Utils/Logger";
 import DataToProcess from "../DataToProcess";
-import OneUptimeDate from "Common/Types/Date";
-import { JSONObject } from "Common/Types/JSON";
+import OneUptimeDate from "../../../../Types/Date";
+import { JSONObject } from "../../../../Types/JSON";
 import {
   CheckOn,
   CriteriaFilter,
   FilterType,
-} from "Common/Types/Monitor/CriteriaFilter";
-import IncomingMonitorRequest from "Common/Types/Monitor/IncomingMonitor/IncomingMonitorRequest";
-import Typeof from "Common/Types/Typeof";
+} from "../../../../Types/Monitor/CriteriaFilter";
+import IncomingMonitorRequest from "../../../../Types/Monitor/IncomingMonitor/IncomingMonitorRequest";
+import Typeof from "../../../../Types/Typeof";
 import EvaluateOverTime from "./EvaluateOverTime";
 import CompareCriteria from "./CompareCriteria";
-import ProbeMonitorResponse from "Common/Types/Probe/ProbeMonitorResponse";
+import ProbeMonitorResponse from "../../../../Types/Probe/ProbeMonitorResponse";
 import CaptureSpan from "../../Telemetry/CaptureSpan";
 
 export default class IncomingRequestCriteria {
@@ -75,6 +75,18 @@ export default class IncomingRequestCriteria {
       });
     }
 
+    // timeout.
+    if (input.criteriaFilter.checkOn === CheckOn.IsRequestTimeout) {
+      const currentIsTimeout: boolean | Array<boolean> =
+        (overTimeValue as Array<boolean>) ||
+        (input.dataToProcess as ProbeMonitorResponse).isTimeout;
+
+      return CompareCriteria.compareCriteriaBoolean({
+        value: currentIsTimeout,
+        criteriaFilter: input.criteriaFilter,
+      });
+    }
+
     // All incoming request related checks
 
     if (input.criteriaFilter.checkOn === CheckOn.IncomingRequest) {
@@ -91,7 +103,8 @@ export default class IncomingRequestCriteria {
 
       const differenceInMinutes: number = OneUptimeDate.getDifferenceInMinutes(
         lastCheckTime,
-        OneUptimeDate.getCurrentDate(),
+        (input.dataToProcess as IncomingMonitorRequest)?.checkedAt ||
+          OneUptimeDate.getCurrentDate(),
       );
 
       logger.debug("Difference in minutes: " + differenceInMinutes);

@@ -115,6 +115,7 @@ const IncidentsTable: FunctionComponent<ComponentProps> = (
     <>
       <ModelTable<Incident>
         name="Incidents"
+        userPreferencesKey="incidents-table"
         bulkActions={{
           buttons: [ModalTableBulkDefaultActions.Delete],
         }}

@@ -1,17 +1,18 @@
 import { IDENTITY_URL } from "../Config";
 import LocalStorage from "./LocalStorage";
-import URL from "Common/Types/API/URL";
-import Dictionary from "Common/Types/Dictionary";
-import Email from "Common/Types/Email";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import { JSONObject, JSONValue } from "Common/Types/JSON";
-import Name from "Common/Types/Name";
-import ObjectID from "Common/Types/ObjectID";
-import Timezone from "Common/Types/Timezone";
-import API from "Common/Utils/API";
+import URL from "../../Types/API/URL";
+import Dictionary from "../../Types/Dictionary";
+import Email from "../../Types/Email";
+import BadDataException from "../../Types/Exception/BadDataException";
+import { JSONObject, JSONValue } from "../../Types/JSON";
+import Name from "../../Types/Name";
+import ObjectID from "../../Types/ObjectID";
+import Timezone from "../../Types/Timezone";
+import API from "../Utils/API/API";
 import Cookie from "./Cookie";
-import CookieName from "Common/Types/CookieName";
+import CookieName from "../../Types/CookieName";
 import SessionStorage from "./SessionStorage";
+import { Logger } from "./Logger";
 
 export default class UserUtil {
   public static setProfilePicId(id: ObjectID | null): void {
@@ -170,10 +171,17 @@ export default class UserUtil {
     return Boolean(this.getEmail());
   }
 
-  public static async logout(): Promise<void> {
-    await API.post(URL.fromString(IDENTITY_URL.toString()).addRoute("/logout"));
+  public static logout(): void {
     LocalStorage.clear();
     SessionStorage.clear();
+    Cookie.clearAllCookies();
+
+    API.post(URL.fromString(IDENTITY_URL.toString()).addRoute("/logout")).catch(
+      (err: Error) => {
+        Logger.error("Error during logout:");
+        Logger.error(err.message);
+      },
+    );
   }
 
   public static getUtmParams(): Dictionary<string> {

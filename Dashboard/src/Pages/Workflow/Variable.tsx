@@ -23,6 +23,7 @@ const Workflows: FunctionComponent<PageComponentProps> = (): ReactElement => {
           description:
             "Here is a list of global secrets and variables for this project.",
         }}
+        userPreferencesKey="workflow-variable-table"
         query={{
           workflowId: new IsNull(),
           projectId: ProjectUtil.getCurrentProjectId()!,
@@ -88,7 +89,7 @@ const Workflows: FunctionComponent<PageComponentProps> = (): ReactElement => {
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {
@@ -119,7 +120,7 @@ const Workflows: FunctionComponent<PageComponentProps> = (): ReactElement => {
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

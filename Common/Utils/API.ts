@@ -458,14 +458,17 @@ export default class API {
     // get url from error
     const url: string = error?.config?.url || "";
 
-    throw new APIException(
-      `Error occurred while making request to ${url}.`,
-      error,
-    );
+    const errorMessage: string = error.message || error.toString();
+
+    throw new APIException(`Request failed to ${url}. ${errorMessage}`, error);
   }
 
   public static getFriendlyErrorMessage(error: AxiosError | Error): string {
-    const errorString: string = error.message || error.toString();
+    let errorString: string = error.message || error.toString();
+
+    if (error instanceof APIException) {
+      errorString = `${error.message?.toString()} ${error.error?.message || error.error?.toString() || ""}`;
+    }
 
     if (errorString.toLocaleLowerCase().includes("network error")) {
       return "Network Error.";

@@ -1,5 +1,5 @@
-import { Black } from "Common/Types/BrandColors";
-import Color from "Common/Types/Color";
+import { Black } from "../../../Types/BrandColors";
+import Color from "../../../Types/Color";
 import React, { CSSProperties, FunctionComponent, ReactElement } from "react";
 import Tooltip from "../Tooltip/Tooltip";
 import { GetReactElementFunction } from "../../Types/FunctionTypes";

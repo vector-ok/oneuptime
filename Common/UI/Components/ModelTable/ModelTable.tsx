@@ -1,19 +1,19 @@
-import GroupBy from "../../Utils/BaseDatabase/GroupBy";
-import Query from "../../../Types/BaseDatabase/Query";
-import Select from "../../Utils/BaseDatabase/Select";
-import Sort from "../../Utils/BaseDatabase/Sort";
 import ModelAPI, { RequestOptions } from "../../Utils/ModelAPI/ModelAPI";
 import { FormType, ModelField } from "../Forms/ModelForm";
 import ModelFormModal from "../ModelFormModal/ModelFormModal";
 import BaseModelTable, { BaseTableProps, ModalType } from "./BaseModelTable";
-import { AnalyticsBaseModelType } from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+import { AnalyticsBaseModelType } from "../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
 import BaseModel, {
   DatabaseBaseModelType,
-} from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import Dictionary from "Common/Types/Dictionary";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
+} from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import Dictionary from "../../../Types/Dictionary";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
 import React, { ReactElement } from "react";
+import Query from "../../../Types/BaseDatabase/Query";
+import GroupBy from "../../../Types/BaseDatabase/GroupBy";
+import Sort from "../../../Types/BaseDatabase/Sort";
+import Select from "../../../Types/BaseDatabase/Select";
 
 export interface ComponentProps<TBaseModel extends BaseModel>
   extends BaseTableProps<TBaseModel> {

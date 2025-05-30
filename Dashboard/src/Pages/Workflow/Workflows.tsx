@@ -18,6 +18,7 @@ import WorkflowLog from "Common/Models/DatabaseModels/WorkflowLog";
 import React, { Fragment, FunctionComponent, ReactElement } from "react";
 import Pill from "Common/UI/Components/Pill/Pill";
 import { Green500, Red500 } from "Common/Types/BrandColors";
+import WorkflowElement from "../../Components/Workflow/WorkflowElement";
 
 const Workflows: FunctionComponent<PageComponentProps> = (): ReactElement => {
   const startDate: Date = OneUptimeDate.getSomeDaysAgo(30);
@@ -55,6 +56,7 @@ const Workflows: FunctionComponent<PageComponentProps> = (): ReactElement => {
         <ModelTable<Workflow>
           modelType={Workflow}
           id="status-page-table"
+          userPreferencesKey="workflow-table"
           isDeleteable={false}
           isEditable={false}
           isCreateable={true}
@@ -176,14 +178,17 @@ const Workflows: FunctionComponent<PageComponentProps> = (): ReactElement => {
                 name: true,
               },
               title: "Name",
-              type: FieldType.Text,
+              type: FieldType.Element,
+              getElement: (item: Workflow): ReactElement => {
+                return <WorkflowElement workflow={item} />;
+              },
             },
             {
               field: {
                 description: true,
               },
               title: "Description",
-              type: FieldType.Text,
+              type: FieldType.LongText,
             },
             {
               field: {

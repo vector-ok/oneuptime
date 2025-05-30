@@ -19,6 +19,7 @@ const IncidentsPage: FunctionComponent<
       <ModelTable<IncidentState>
         modelType={IncidentState}
         id="incident-state-table"
+        userPreferencesKey="incident-state-table"
         name="Settings > Incident State"
         isDeleteable={true}
         isEditable={true}
@@ -81,7 +82,7 @@ const IncidentsPage: FunctionComponent<
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
 
             getElement: (item: IncidentState): ReactElement => {
               return (

@@ -26,6 +26,7 @@ const Users: FunctionComponent = (): ReactElement => {
     >
       <ModelTable<User>
         modelType={User}
+        userPreferencesKey="admin-users-table"
         id="users-table"
         isDeleteable={false}
         isEditable={false}

@@ -22,6 +22,7 @@ const IncidentTemplates: FunctionComponent<PageComponentProps> = (
       <ModelTable<IncidentTemplate>
         modelType={IncidentTemplate}
         id="incident-templates-table"
+        userPreferencesKey="incident-templates-table"
         name="Settings > Incident Templates"
         isDeleteable={false}
         isEditable={false}
@@ -250,7 +251,7 @@ const IncidentTemplates: FunctionComponent<PageComponentProps> = (
               templateDescription: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
         columns={[
@@ -266,7 +267,7 @@ const IncidentTemplates: FunctionComponent<PageComponentProps> = (
               templateDescription: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
       />

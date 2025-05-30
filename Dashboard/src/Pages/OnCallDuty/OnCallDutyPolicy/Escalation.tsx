@@ -29,6 +29,7 @@ const OnCallPolicyDelete: FunctionComponent<PageComponentProps> = (
       <ModelTable<OnCallDutyEscalationRule>
         modelType={OnCallDutyEscalationRule}
         id="table-scheduled-maintenance-internal-note"
+        userPreferencesKey="scheduled-maintenance-internal-note-table"
         name="Scheduled Maintenance Events > Public Notes"
         isDeleteable={true}
         isCreateable={true}
@@ -186,7 +187,7 @@ const OnCallPolicyDelete: FunctionComponent<PageComponentProps> = (
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
         columns={[

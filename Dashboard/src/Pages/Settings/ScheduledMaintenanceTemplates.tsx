@@ -400,6 +400,7 @@ const ScheduledMaintenanceTemplates: FunctionComponent<PageComponentProps> = (
       <ModelTable<ScheduledMaintenanceTemplate>
         modelType={ScheduledMaintenanceTemplate}
         id="Scheduled-Maintenance-templates-table"
+        userPreferencesKey="scheduled-maintenance-templates-table"
         name="Settings > Scheduled Maintenance Templates"
         isDeleteable={false}
         isEditable={false}
@@ -436,7 +437,7 @@ const ScheduledMaintenanceTemplates: FunctionComponent<PageComponentProps> = (
               templateDescription: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
         columns={[
@@ -452,7 +453,7 @@ const ScheduledMaintenanceTemplates: FunctionComponent<PageComponentProps> = (
               templateDescription: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

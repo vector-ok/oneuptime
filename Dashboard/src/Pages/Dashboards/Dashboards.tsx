@@ -34,6 +34,7 @@ const Dashboards: FunctionComponent<PageComponentProps> = (): ReactElement => {
       <ModelTable<Dashboard>
         modelType={Dashboard}
         id="dashboard-table"
+        userPreferencesKey="dashboards-table"
         isDeleteable={false}
         isEditable={false}
         isCreateable={true}
@@ -86,7 +87,7 @@ const Dashboards: FunctionComponent<PageComponentProps> = (): ReactElement => {
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {
@@ -124,7 +125,7 @@ const Dashboards: FunctionComponent<PageComponentProps> = (): ReactElement => {
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

@@ -1,5 +1,5 @@
-import Faker from "Common/Utils/Faker";
-import Project from "Common/Models/DatabaseModels/Project";
+import Faker from "../../../../Utils/Faker";
+import Project from "../../../../Models/DatabaseModels/Project";
 import SubscriptionPlan, {
   PlanType,
 } from "../../../../Types/Billing/SubscriptionPlan";

@@ -25,8 +25,12 @@ const DashboardNavbar: FunctionComponent<ComponentProps> = (
     return <></>;
   }
 
+  const spaceAroundClassName: string = "justify-between";
+
   return (
-    <NavBar className="bg-white lg:flex text-center justify-between py-2 mt-5 rounded-lg shadow px-5">
+    <NavBar
+      className={`bg-white lg:flex text-center ${spaceAroundClassName} py-2 mt-5 rounded-lg shadow px-5`}
+    >
       <NavBarItem
         id="overview-nav-bar-item"
         title="Overview"

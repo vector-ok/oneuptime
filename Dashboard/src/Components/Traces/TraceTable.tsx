@@ -28,7 +28,7 @@ import ErrorMessage from "Common/UI/Components/ErrorMessage/ErrorMessage";
 import Query from "Common/Types/BaseDatabase/Query";
 import SpanUtil from "../../Utils/SpanUtil";
 import TraceElement from "./TraceElement";
-import ListResult from "Common/UI/Utils/BaseDatabase/ListResult";
+import ListResult from "Common/Types/BaseDatabase/ListResult";
 import TelemetryService from "Common/Models/DatabaseModels/TelemetryService";
 import { LIMIT_PER_PROJECT } from "Common/Types/Database/LimitMax";
 import TelemetryServiceElement from "../TelemetryService/TelemetryServiceElement";
@@ -150,6 +150,7 @@ const TraceTable: FunctionComponent<ComponentProps> = (
     <Fragment>
       <div className="rounded">
         <AnalyticsModelTable<Span>
+          userPreferencesKey="trace-table"
           disablePagination={props.isMinimalTable}
           modelType={Span}
           id="traces-table"

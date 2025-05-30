@@ -4,8 +4,8 @@ import {
   CriteriaFilter,
   EvaluateOverTimeType,
   FilterType,
-} from "Common/Types/Monitor/CriteriaFilter";
-import Typeof from "Common/Types/Typeof";
+} from "../../../../Types/Monitor/CriteriaFilter";
+import Typeof from "../../../../Types/Typeof";
 import CaptureSpan from "../../Telemetry/CaptureSpan";
 
 export default class CompareCriteria {
@@ -312,6 +312,18 @@ export default class CompareCriteria {
       }
 
       return null;
+    }
+
+    // check equalto and not equal to
+    const equalToOrNotEqualToResult: string | null =
+      CompareCriteria.checkEqualToOrNotEqualTo({
+        value: data.value,
+        threshold: data.threshold,
+        criteriaFilter: data.criteriaFilter,
+      });
+
+    if (equalToOrNotEqualToResult) {
+      return equalToOrNotEqualToResult;
     }
 
     return null;
