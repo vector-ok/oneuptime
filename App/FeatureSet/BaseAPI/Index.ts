@@ -570,6 +570,15 @@ import MonitorLogService, {
   Service as MonitorLogServiceType,
 } from "Common/Server/Services/MonitorLogService";
 
+//OnCallDutyPolicyTimeLog
+import OnCallDutyPolicyTimeLog from "Common/Models/DatabaseModels/OnCallDutyPolicyTimeLog";
+import OnCallDutyPolicyTimeLogService, {
+  Service as OnCallDutyPolicyTimeLogServiceType,
+} from "Common/Server/Services/OnCallDutyPolicyTimeLogService";
+
+// Open API Spec
+import OpenAPI from "Common/Server/API/OpenAPI";
+
 const BaseAPIFeatureSet: FeatureSet = {
   init: async (): Promise<void> => {
     const app: ExpressApplication = Express.getExpressApp();
@@ -584,6 +593,8 @@ const BaseAPIFeatureSet: FeatureSet = {
       ).getRouter(),
     );
 
+    app.use(`/${APP_NAME.toLocaleLowerCase()}`, OpenAPI.getRouter());
+
     app.use(
       `/${APP_NAME.toLocaleLowerCase()}`,
       new BaseAnalyticsAPI<MonitorLog, MonitorLogServiceType>(
@@ -597,6 +608,15 @@ const BaseAPIFeatureSet: FeatureSet = {
       new BaseAPI<AlertState, AlertStateServiceType>(
         AlertState,
         AlertStateService,
+      ).getRouter(),
+    );
+
+    // OnCallDutyPolicyTimeLogService
+    app.use(
+      `/${APP_NAME.toLocaleLowerCase()}`,
+      new BaseAPI<OnCallDutyPolicyTimeLog, OnCallDutyPolicyTimeLogServiceType>(
+        OnCallDutyPolicyTimeLog,
+        OnCallDutyPolicyTimeLogService,
       ).getRouter(),
     );
 

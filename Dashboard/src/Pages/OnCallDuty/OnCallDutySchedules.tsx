@@ -17,6 +17,7 @@ const OnCallDutyPage: FunctionComponent<
       <ModelTable<OnCallDutySchedule>
         modelType={OnCallDutySchedule}
         id="on-call-duty-table"
+        userPreferencesKey="on-call-duty-table"
         isDeleteable={false}
         name="On-Call > Schedules"
         showViewIdButton={true}
@@ -118,7 +119,7 @@ const OnCallDutyPage: FunctionComponent<
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

@@ -9,7 +9,7 @@ import FilterData from "../Filters/Types/FilterData";
 import Pagination from "../Pagination/Pagination";
 import ListBody from "./ListBody";
 import { ListDetailProps } from "./ListRow";
-import GenericObject from "Common/Types/GenericObject";
+import GenericObject from "../../../Types/GenericObject";
 import React, { ReactElement } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 

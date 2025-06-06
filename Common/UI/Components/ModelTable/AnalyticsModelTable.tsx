@@ -1,18 +1,18 @@
 import ModelAPI from "../../Utils/AnalyticsModelAPI/AnalyticsModelAPI";
-import GroupBy from "../../Utils/BaseDatabase/GroupBy";
 import Query from "../../../Types/BaseDatabase/Query";
-import RequestOptions from "../../Utils/BaseDatabase/RequestOptions";
-import Select from "../../Utils/BaseDatabase/Select";
-import Sort from "../../Utils/BaseDatabase/Sort";
 import BaseModelTable, { BaseTableProps, ModalType } from "./BaseModelTable";
 import AnalyticsBaseModel, {
   AnalyticsBaseModelType,
-} from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
-import { DatabaseBaseModelType } from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import NotImplementedException from "Common/Types/Exception/NotImplementedException";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
+} from "../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+import { DatabaseBaseModelType } from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import NotImplementedException from "../../../Types/Exception/NotImplementedException";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
 import React, { ReactElement } from "react";
+import Select from "../../../Types/BaseDatabase/Select";
+import Sort from "../../../Types/BaseDatabase/Sort";
+import GroupBy from "../../../Types/BaseDatabase/GroupBy";
+import RequestOptions from "../../Utils/API/RequestOptions";
 
 export interface ComponentProps<TBaseModel extends AnalyticsBaseModel>
   extends BaseTableProps<TBaseModel> {

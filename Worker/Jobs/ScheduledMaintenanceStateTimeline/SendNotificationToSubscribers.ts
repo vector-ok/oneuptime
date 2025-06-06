@@ -33,6 +33,7 @@ import StatusPageEventType from "Common/Types/StatusPage/StatusPageEventType";
 import ScheduledMaintenanceFeedService from "Common/Server/Services/ScheduledMaintenanceFeedService";
 import { ScheduledMaintenanceFeedEventType } from "Common/Models/DatabaseModels/ScheduledMaintenanceFeed";
 import { Blue500 } from "Common/Types/BrandColors";
+import SlackUtil from "Common/Server/Utils/Workspace/Slack/Slack";
 
 RunCron(
   "ScheduledMaintenanceStateTimeline:SendNotificationToSubscribers",
@@ -251,6 +252,33 @@ RunCron(
             });
           }
 
+          if (subscriber.slackIncomingWebhookUrl) {
+            // Create markdown message for Slack
+            const markdownMessage: string = `## Scheduled Maintenance State Update - ${statusPageName}
+
+**Event:** ${event.title || ""}
+
+**State Changed To:** ${scheduledEventStateTimeline.scheduledMaintenanceState?.name}
+
+**Resources Affected:** ${
+              statusPageToResources[statuspage._id!]
+                ?.map((r: StatusPageResource) => {
+                  return r.displayName;
+                })
+                .join(", ") || ""
+            }
+
+[View Status Page](${statusPageURL}) | [Unsubscribe](${unsubscribeUrl})`;
+
+            // send Slack notification with markdown conversion
+            SlackUtil.sendMessageToChannelViaIncomingWebhook({
+              url: subscriber.slackIncomingWebhookUrl,
+              text: SlackUtil.convertMarkdownToSlackRichText(markdownMessage),
+            }).catch((err: Error) => {
+              logger.error(err);
+            });
+          }
+
           if (subscriber.subscriberEmail) {
             // send email here.
 
@@ -286,7 +314,6 @@ RunCron(
                     event.startsAt!,
                   ),
                   eventTitle: event.title || "",
-                  eventDescription: event.description || "",
                   unsubscribeUrl: unsubscribeUrl,
                   subscriberEmailNotificationFooterText:
                     statuspage.subscriberEmailNotificationFooterText || "",

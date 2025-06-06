@@ -17,6 +17,7 @@ const IncidentNoteTemplates: FunctionComponent<PageComponentProps> = (
         id="incident-templates-table"
         name="Settings > Incident Templates"
         isDeleteable={false}
+        userPreferencesKey="incident-templates-table"
         isEditable={false}
         isCreateable={true}
         isViewable={true}
@@ -111,7 +112,7 @@ const IncidentNoteTemplates: FunctionComponent<PageComponentProps> = (
               templateDescription: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
       />

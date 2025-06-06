@@ -1,3 +1,5 @@
+import Zod, { ZodSchema } from "../../Utils/Schema/Zod";
+
 export enum CheckOn {
   ResponseTime = "Response Time (in ms)",
   ResponseStatusCode = "Response Status Code",
@@ -22,6 +24,7 @@ export enum CheckOn {
   IsExpiredCertificate = "Is Expired Certificate",
   IsValidCertificate = "Is Valid Certificate",
   IsNotAValidCertificate = "Is Not A Valid Certificate",
+  IsRequestTimeout = "Is Request Timeout",
 
   // Custom code or synthetic monitor.
   ResultValue = "Result Value",
@@ -121,6 +124,10 @@ export class CriteriaFilterUtil {
       return false;
     }
 
+    if (checkOn === CheckOn.IsRequestTimeout) {
+      return false;
+    }
+
     if (
       checkOn === CheckOn.IsValidCertificate ||
       checkOn === CheckOn.IsSelfSignedCertificate ||
@@ -174,3 +181,21 @@ export class CriteriaFilterUtil {
     );
   }
 }
+
+export const CriteriaFilterSchema: ZodSchema = Zod.object({
+  checkOn: Zod.string(),
+  serverMonitorOptions: Zod.object({
+    diskPath: Zod.string().optional(),
+  }).optional(),
+  metricMonitorOptions: Zod.object({
+    metricAlias: Zod.string().optional(),
+    metricAggregationType: Zod.string().optional(),
+  }).optional(),
+  filterType: Zod.string().optional(),
+  value: Zod.union([Zod.string(), Zod.number()]).optional(),
+  eveluateOverTime: Zod.boolean().optional(),
+  evaluateOverTimeOptions: Zod.object({
+    timeValueInMinutes: Zod.number().optional(),
+    evaluateOverTimeType: Zod.string().optional(),
+  }).optional(),
+});

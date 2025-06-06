@@ -7,14 +7,14 @@ import {
 import StatementGenerator from "../../../../Server/Utils/AnalyticsDatabase/StatementGenerator";
 import logger from "../../../../Server/Utils/Logger";
 import "../../TestingUtils/Init";
-import AnalyticsBaseModel from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
-import NestedModel from "Common/Models/AnalyticsModels/AnalyticsBaseModel/NestedModel";
-import Route from "Common/Types/API/Route";
-import AnalyticsTableEngine from "Common/Types/AnalyticsDatabase/AnalyticsTableEngine";
-import AnalyticsTableColumn from "Common/Types/AnalyticsDatabase/TableColumn";
-import TableColumnType from "Common/Types/AnalyticsDatabase/TableColumnType";
-import OneUptimeDate from "Common/Types/Date";
-import GenericObject from "Common/Types/GenericObject";
+import AnalyticsBaseModel from "../../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+import NestedModel from "../../../../Models/AnalyticsModels/AnalyticsBaseModel/NestedModel";
+import Route from "../../../../Types/API/Route";
+import AnalyticsTableEngine from "../../../../Types/AnalyticsDatabase/AnalyticsTableEngine";
+import AnalyticsTableColumn from "../../../../Types/AnalyticsDatabase/TableColumn";
+import TableColumnType from "../../../../Types/AnalyticsDatabase/TableColumnType";
+import OneUptimeDate from "../../../../Types/Date";
+import GenericObject from "../../../../Types/GenericObject";
 
 function expectStatement(actual: Statement, expected: Statement): void {
   expect(actual.query).toBe(expected.query);
@@ -342,12 +342,13 @@ describe("StatementGenerator", () => {
       /* eslint-disable prettier/prettier */
             const expectedStatement: Statement = SQL`
                 CREATE TABLE IF NOT EXISTS ${'oneuptime'}.${'<table-name>'}
-                (
-                    <columns-create-statement>
-                )
-                ENGINE = MergeTree
-                PRIMARY KEY (${'column_ObjectID'})
-                ORDER BY (${'column_ObjectID'})
+            (
+                <columns-create-statement>
+            )
+            ENGINE = MergeTree
+        PARTITION BY (column_ObjectID)
+            PRIMARY KEY (${'column_ObjectID'})
+            ORDER BY (${'column_ObjectID'})
             `;
             /* eslint-enable prettier/prettier */
 

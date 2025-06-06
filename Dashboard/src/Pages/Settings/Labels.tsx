@@ -19,6 +19,7 @@ const Labels: FunctionComponent<PageComponentProps> = (): ReactElement => {
         }}
         id="labels-table"
         name="Settings > Labels"
+        userPreferencesKey="labels-table"
         isDeleteable={true}
         isEditable={true}
         isCreateable={true}
@@ -105,7 +106,7 @@ const Labels: FunctionComponent<PageComponentProps> = (): ReactElement => {
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
       />

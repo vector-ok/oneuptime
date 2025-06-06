@@ -25,12 +25,12 @@ import JSONWebTokenData from "../../Types/JsonWebTokenData";
 import ObjectID from "../../Types/ObjectID";
 import PositiveNumber from "../../Types/PositiveNumber";
 import Typeof from "../../Types/Typeof";
-import MonitorStatus from "Common/Models/DatabaseModels/MonitorStatus";
-import StatusPage from "Common/Models/DatabaseModels/StatusPage";
-import StatusPageDomain from "Common/Models/DatabaseModels/StatusPageDomain";
-import StatusPageOwnerTeam from "Common/Models/DatabaseModels/StatusPageOwnerTeam";
-import StatusPageOwnerUser from "Common/Models/DatabaseModels/StatusPageOwnerUser";
-import User from "Common/Models/DatabaseModels/User";
+import MonitorStatus from "../../Models/DatabaseModels/MonitorStatus";
+import StatusPage from "../../Models/DatabaseModels/StatusPage";
+import StatusPageDomain from "../../Models/DatabaseModels/StatusPageDomain";
+import StatusPageOwnerTeam from "../../Models/DatabaseModels/StatusPageOwnerTeam";
+import StatusPageOwnerUser from "../../Models/DatabaseModels/StatusPageOwnerUser";
+import User from "../../Models/DatabaseModels/User";
 import {
   AllowedStatusPageCountInFreePlan,
   IsBillingEnabled,
@@ -39,24 +39,28 @@ import { PlanType } from "../../Types/Billing/SubscriptionPlan";
 import Recurring from "../../Types/Events/Recurring";
 import Email from "../../Types/Email";
 import StatusPageSubscriberService from "./StatusPageSubscriberService";
-import StatusPageSubscriber from "Common/Models/DatabaseModels/StatusPageSubscriber";
+import StatusPageSubscriber from "../../Models/DatabaseModels/StatusPageSubscriber";
 import MailService from "./MailService";
 import EmailTemplateType from "../../Types/Email/EmailTemplateType";
-import { FileRoute } from "Common/ServiceRoute";
+import { FileRoute } from "../../ServiceRoute";
 import ProjectSMTPConfigService from "./ProjectSmtpConfigService";
-import StatusPageResource from "Common/Models/DatabaseModels/StatusPageResource";
+import StatusPageResource from "../../Models/DatabaseModels/StatusPageResource";
 import StatusPageResourceService from "./StatusPageResourceService";
 import Dictionary from "../../Types/Dictionary";
-import MonitorGroupResource from "Common/Models/DatabaseModels/MonitorGroupResource";
+import MonitorGroupResource from "../../Models/DatabaseModels/MonitorGroupResource";
 import MonitorGroupResourceService from "./MonitorGroupResourceService";
 import QueryHelper from "../Types/Database/QueryHelper";
 import OneUptimeDate from "../../Types/Date";
 import IncidentService from "./IncidentService";
-import MonitorStatusTimeline from "Common/Models/DatabaseModels/MonitorStatusTimeline";
+import MonitorStatusTimeline from "../../Models/DatabaseModels/MonitorStatusTimeline";
 import MonitorStatusTimelineService from "./MonitorStatusTimelineService";
 import SortOrder from "../../Types/BaseDatabase/SortOrder";
-import UptimeUtil from "Common/Utils/Uptime/UptimeUtil";
+import UptimeUtil from "../../Utils/Uptime/UptimeUtil";
 import UptimePrecision from "../../Types/StatusPage/UptimePrecision";
+import IP from "../../Types/IP/IP";
+import NotAuthenticatedException from "../../Types/Exception/NotAuthenticatedException";
+import ForbiddenException from "../../Types/Exception/ForbiddenException";
+import CommonAPI from "../API/CommonAPI";
 
 export interface StatusPageReportItem {
   resourceName: string;
@@ -319,12 +323,80 @@ export class Service extends DatabaseService<StatusPage> {
   }
 
   @CaptureSpan()
-  public async hasReadAccess(
-    statusPageId: ObjectID,
-    props: DatabaseCommonInteractionProps,
-    req: ExpressRequest,
-  ): Promise<boolean> {
+  public async hasReadAccess(data: {
+    statusPageId: ObjectID;
+    req: ExpressRequest;
+  }): Promise<{
+    hasReadAccess: boolean;
+    error?: NotAuthenticatedException | ForbiddenException;
+  }> {
+    const statusPageId: ObjectID = data.statusPageId;
+    const req: ExpressRequest = data.req;
+
+    const props: DatabaseCommonInteractionProps =
+      await CommonAPI.getDatabaseCommonInteractionProps(req);
     try {
+      // get status page by id.
+      const statusPage: StatusPage | null = await this.findOneById({
+        id: statusPageId,
+        props: {
+          isRoot: true,
+        },
+        select: {
+          _id: true,
+          isPublicStatusPage: true,
+          ipWhitelist: true,
+        },
+      });
+
+      if (statusPage?.ipWhitelist && statusPage.ipWhitelist.length > 0) {
+        const ipWhitelist: Array<string> = statusPage.ipWhitelist?.split("\n");
+
+        const ipAccessedFrom: string | undefined =
+          req.headers["x-forwarded-for"]?.toString() ||
+          req.headers["x-real-ip"]?.toString() ||
+          req.socket.remoteAddress ||
+          req.ip ||
+          req.ips[0];
+
+        if (!ipAccessedFrom) {
+          logger.error("IP address not found in request.");
+          return {
+            hasReadAccess: false,
+            error: new ForbiddenException(
+              "Unable to verify IP address for status page access.",
+            ),
+          };
+        }
+
+        const isIPWhitelisted: boolean = IP.isInWhitelist({
+          ips:
+            ipAccessedFrom?.split(",").map((i: string) => {
+              return i.trim();
+            }) || [],
+          whitelist: ipWhitelist,
+        });
+
+        if (!isIPWhitelisted) {
+          logger.error(
+            `IP address ${ipAccessedFrom} is not whitelisted for status page ${statusPageId.toString()}.`,
+          );
+
+          return {
+            hasReadAccess: false,
+            error: new ForbiddenException(
+              `Your IP address ${ipAccessedFrom} is blocked from accessing this status page.`,
+            ),
+          };
+        }
+      }
+
+      if (statusPage && statusPage.isPublicStatusPage) {
+        return {
+          hasReadAccess: true,
+        };
+      }
+
       // token decode.
       const token: string | undefined = CookieUtil.getCookieFromExpressRequest(
         req,
@@ -338,27 +410,13 @@ export class Service extends DatabaseService<StatusPage> {
           );
 
           if (decoded.statusPageId?.toString() === statusPageId.toString()) {
-            return true;
+            return {
+              hasReadAccess: true,
+            };
           }
         } catch (err) {
           logger.error(err);
         }
-      }
-
-      const count: PositiveNumber = await this.countBy({
-        query: {
-          _id: statusPageId.toString(),
-          isPublicStatusPage: true,
-        },
-        skip: 0,
-        limit: 1,
-        props: {
-          isRoot: true,
-        },
-      });
-
-      if (count.positiveNumber > 0) {
-        return true;
       }
 
       // if it does not have public access, check if this user has access.
@@ -376,13 +434,20 @@ export class Service extends DatabaseService<StatusPage> {
       });
 
       if (items.length > 0) {
-        return true;
+        return {
+          hasReadAccess: true,
+        };
       }
     } catch (err) {
       logger.error(err);
     }
 
-    return false;
+    return {
+      hasReadAccess: false,
+      error: new NotAuthenticatedException(
+        "You do not have access to this status page. Please login to view the status page.",
+      ),
+    };
   }
 
   @CaptureSpan()

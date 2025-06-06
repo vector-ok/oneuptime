@@ -5,9 +5,9 @@ import ScheduledMaintenanceTemplateOwnerUserService from "./ScheduledMaintenance
 import DatabaseCommonInteractionProps from "../../Types/BaseDatabase/DatabaseCommonInteractionProps";
 import ObjectID from "../../Types/ObjectID";
 import Typeof from "../../Types/Typeof";
-import Model from "Common/Models/DatabaseModels/ScheduledMaintenanceTemplate";
-import ScheduledMaintenanceTemplateOwnerTeam from "Common/Models/DatabaseModels/ScheduledMaintenanceTemplateOwnerTeam";
-import ScheduledMaintenanceTemplateOwnerUser from "Common/Models/DatabaseModels/ScheduledMaintenanceTemplateOwnerUser";
+import Model from "../../Models/DatabaseModels/ScheduledMaintenanceTemplate";
+import ScheduledMaintenanceTemplateOwnerTeam from "../../Models/DatabaseModels/ScheduledMaintenanceTemplateOwnerTeam";
+import ScheduledMaintenanceTemplateOwnerUser from "../../Models/DatabaseModels/ScheduledMaintenanceTemplateOwnerUser";
 import CreateBy from "../Types/Database/CreateBy";
 import OneUptimeDate from "../../Types/Date";
 import Recurring from "../../Types/Events/Recurring";
@@ -234,12 +234,20 @@ export class Service extends DatabaseService<Model> {
           );
         }
 
-        // now get next interval time.
+        // check if firstEventScheduledAt is in the future, and if yes return that.
+        if (OneUptimeDate.isInTheFuture(firstEventScheduledAt)) {
+          // if it is in the future, then we do not need to change the next scheduled time.
+          newTemplate.scheduleNextEventAt = firstEventScheduledAt;
+        } else {
+          // if it is not in the future, then we need to calculate the next scheduled time.
 
-        newTemplate.scheduleNextEventAt = this.getNextEventTime({
-          dateAndTime: firstEventScheduledAt,
-          recurringInterval: recurringInterval,
-        });
+          // now get next interval time.
+
+          newTemplate.scheduleNextEventAt = this.getNextEventTime({
+            dateAndTime: firstEventScheduledAt,
+            recurringInterval: recurringInterval,
+          });
+        }
       }
     }
 

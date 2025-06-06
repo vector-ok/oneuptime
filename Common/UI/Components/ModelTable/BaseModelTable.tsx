@@ -3,12 +3,11 @@ import { API_DOCS_URL, BILLING_ENABLED, getAllEnvVars } from "../../Config";
 import { GetReactElementFunction } from "../../Types/FunctionTypes";
 import SelectEntityField from "../../Types/SelectEntityField";
 import API from "../../Utils/API/API";
-import GroupBy from "../../Utils/BaseDatabase/GroupBy";
-import ListResult from "../../Utils/BaseDatabase/ListResult";
+
 import Query from "../../../Types/BaseDatabase/Query";
-import RequestOptions from "../../Utils/BaseDatabase/RequestOptions";
-import Select from "../../Utils/BaseDatabase/Select";
-import Sort from "../../Utils/BaseDatabase/Sort";
+import GroupBy from "../../../Types/BaseDatabase/GroupBy";
+import Sort from "../../../Types/BaseDatabase/Sort";
+import Select from "../../../Types/BaseDatabase/Select";
 import { Logger } from "../../Utils/Logger";
 import Navigation from "../../Utils/Navigation";
 import PermissionUtil from "../../Utils/Permission";
@@ -48,36 +47,36 @@ import ModelTableColumn from "./Column";
 import Columns from "./Columns";
 import AnalyticsBaseModel, {
   AnalyticsBaseModelType,
-} from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+} from "../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
 import BaseModel, {
   DatabaseBaseModelType,
-} from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import Route from "Common/Types/API/Route";
-import URL from "Common/Types/API/URL";
-import { ColumnAccessControl } from "Common/Types/BaseDatabase/AccessControl";
-import InBetween from "Common/Types/BaseDatabase/InBetween";
-import Search from "Common/Types/BaseDatabase/Search";
-import SortOrder from "Common/Types/BaseDatabase/SortOrder";
+} from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import Route from "../../../Types/API/Route";
+import URL from "../../../Types/API/URL";
+import { ColumnAccessControl } from "../../../Types/BaseDatabase/AccessControl";
+import InBetween from "../../../Types/BaseDatabase/InBetween";
+import Search from "../../../Types/BaseDatabase/Search";
+import SortOrder from "../../../Types/BaseDatabase/SortOrder";
 import SubscriptionPlan, {
   PlanType,
-} from "Common/Types/Billing/SubscriptionPlan";
-import { Yellow } from "Common/Types/BrandColors";
-import { LIMIT_PER_PROJECT } from "Common/Types/Database/LimitMax";
-import Dictionary from "Common/Types/Dictionary";
-import BadDataException from "Common/Types/Exception/BadDataException";
+} from "../../../Types/Billing/SubscriptionPlan";
+import { Yellow } from "../../../Types/BrandColors";
+import { LIMIT_PER_PROJECT } from "../../../Types/Database/LimitMax";
+import Dictionary from "../../../Types/Dictionary";
+import BadDataException from "../../../Types/Exception/BadDataException";
 import {
   ErrorFunction,
   PromiseVoidFunction,
   VoidFunction,
-} from "Common/Types/FunctionTypes";
-import IconProp from "Common/Types/Icon/IconProp";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
+} from "../../../Types/FunctionTypes";
+import IconProp from "../../../Types/Icon/IconProp";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
 import Permission, {
   PermissionHelper,
   UserPermission,
-} from "Common/Types/Permission";
-import Typeof from "Common/Types/Typeof";
+} from "../../../Types/Permission";
+import Typeof from "../../../Types/Typeof";
 import React, {
   MutableRefObject,
   ReactElement,
@@ -86,6 +85,11 @@ import React, {
 } from "react";
 import TableViewElement from "./TableView";
 import TableView from "../../../Models/DatabaseModels/TableView";
+import UserPreferences, {
+  UserPreferenceType,
+} from "../../../Utils/UserPreferences";
+import RequestOptions from "../../Utils/API/RequestOptions";
+import ListResult from "../../../Types/BaseDatabase/ListResult";
 
 export enum ShowAs {
   Table,
@@ -219,6 +223,11 @@ export interface BaseTableProps<
   onFilterApplied?: ((isFilterApplied: boolean) => void) | undefined;
 
   formSummary?: FormSummaryConfig | undefined;
+
+  // this key is used to save table user preferences in local storage.
+  // If you provide this key, the table will save the user preferences in local storage.
+  // If you do not provide this key, the table will not save the user preferences in local storage.
+  userPreferencesKey: string;
 }
 
 export interface ComponentProps<
@@ -289,6 +298,21 @@ const BaseModelTable: <TBaseModel extends BaseModel | AnalyticsBaseModel>(
     }
   }, [props.modelType]);
 
+  const getItemsOnPage: () => number = (): number => {
+    if (props.userPreferencesKey) {
+      const itemsOnPage: number | null =
+        UserPreferences.getUserPreferenceByTypeAsNumber({
+          userPreferenceType: UserPreferenceType.BaseModelTablePageSize,
+          key: props.userPreferencesKey,
+        });
+      if (itemsOnPage) {
+        return itemsOnPage;
+      }
+    }
+
+    return props.initialItemsOnPage || 10;
+  };
+
   const [orderedStatesListNewItemOrder, setOrderedStatesListNewItemOrder] =
     useState<number | null>(null);
 
@@ -320,9 +344,18 @@ const BaseModelTable: <TBaseModel extends BaseModel | AnalyticsBaseModel>(
   const [currentDeleteableItem, setCurrentDeleteableItem] =
     useState<TBaseModel | null>(null);
 
-  const [itemsOnPage, setItemsOnPage] = useState<number>(
-    props.initialItemsOnPage || 10,
-  );
+  const [itemsOnPage, setItemsOnPage] = useState<number>(getItemsOnPage());
+
+  useEffect(() => {
+    // update items on page in localstorage.
+    if (itemsOnPage && props.userPreferencesKey) {
+      UserPreferences.saveUserPreferenceByTypeAsNumber({
+        userPreferenceType: UserPreferenceType.BaseModelTablePageSize,
+        key: props.userPreferencesKey,
+        value: itemsOnPage,
+      });
+    }
+  }, [itemsOnPage]);
 
   const [fields, setFields] = useState<Array<Field<TBaseModel>>>([]);
 

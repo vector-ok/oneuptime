@@ -26,6 +26,7 @@ const OnCallDutyPage: FunctionComponent<
       <ModelTable<OnCallDutyPolicy>
         modelType={OnCallDutyPolicy}
         id="on-call-duty-table"
+        userPreferencesKey="on-call-duty-table"
         isDeleteable={false}
         name="On-Call > Policies"
         showViewIdButton={true}
@@ -93,7 +94,7 @@ const OnCallDutyPage: FunctionComponent<
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {
@@ -129,7 +130,7 @@ const OnCallDutyPage: FunctionComponent<
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

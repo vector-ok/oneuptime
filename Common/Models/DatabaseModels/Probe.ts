@@ -30,12 +30,18 @@ import {
   ManyToOne,
 } from "typeorm";
 import Label from "./Label";
+import EnableDocumentation from "../../Types/Database/EnableDocumentation";
+import EnableWorkflow from "../../Types/Database/EnableWorkflow";
 
 export enum ProbeConnectionStatus {
   Connected = "connected",
   Disconnected = "disconnected",
 }
 
+@EnableDocumentation()
+@EnableWorkflow({
+  read: true,
+})
 @TableBillingAccessControl({
   create: PlanType.Growth,
   read: PlanType.Free,
@@ -65,7 +71,13 @@ export enum ProbeConnectionStatus {
     Permission.ProjectMember,
     Permission.CreateProjectProbe,
   ],
-  read: [Permission.Public],
+  read: [
+    Permission.Public,
+    Permission.ProjectOwner,
+    Permission.ProjectAdmin,
+    Permission.ProjectMember,
+    Permission.ReadProjectProbe,
+  ],
   delete: [
     Permission.ProjectOwner,
     Permission.ProjectAdmin,
@@ -263,7 +275,7 @@ export default class Probe extends BaseModel {
       nullable: true,
       onDelete: "CASCADE",
       orphanedRowAction: "delete",
-    },
+    }
   )
   @JoinColumn({ name: "iconFileId" })
   public iconFile?: File = undefined;
@@ -326,7 +338,7 @@ export default class Probe extends BaseModel {
       nullable: true,
       onDelete: "CASCADE",
       orphanedRowAction: "nullify",
-    },
+    }
   )
   @JoinColumn({ name: "projectId" })
   public project?: Project = undefined;
@@ -369,7 +381,7 @@ export default class Probe extends BaseModel {
       nullable: true,
       onDelete: "SET NULL",
       orphanedRowAction: "nullify",
-    },
+    }
   )
   @JoinColumn({ name: "deletedByUserId" })
   public deletedByUser?: User = undefined;
@@ -412,7 +424,7 @@ export default class Probe extends BaseModel {
       nullable: true,
       onDelete: "SET NULL",
       orphanedRowAction: "nullify",
-    },
+    }
   )
   @JoinColumn({ name: "createdByUserId" })
   public createdByUser?: User = undefined;
@@ -551,7 +563,7 @@ export default class Probe extends BaseModel {
     () => {
       return Label;
     },
-    { eager: false },
+    { eager: false }
   )
   @JoinTable({
     name: "ProbeLabel",

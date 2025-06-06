@@ -20,6 +20,7 @@ const Teams: FunctionComponent<PageComponentProps> = (
         isEditable={false}
         isCreateable={true}
         isViewable={true}
+        userPreferencesKey="teams-table"
         cardProps={{
           title: "Teams",
           description: "Here is a list of all the teams in this project.",
@@ -67,7 +68,7 @@ const Teams: FunctionComponent<PageComponentProps> = (
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
         columns={[
@@ -84,7 +85,7 @@ const Teams: FunctionComponent<PageComponentProps> = (
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
       />

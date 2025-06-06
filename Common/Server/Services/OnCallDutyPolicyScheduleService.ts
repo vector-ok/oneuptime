@@ -7,11 +7,11 @@ import { LIMIT_PER_PROJECT } from "../../Types/Database/LimitMax";
 import OneUptimeDate from "../../Types/Date";
 import ObjectID from "../../Types/ObjectID";
 import LayerUtil, { LayerProps } from "../../Types/OnCallDutyPolicy/Layer";
-import OnCallDutyPolicyScheduleLayer from "Common/Models/DatabaseModels/OnCallDutyPolicyScheduleLayer";
-import OnCallDutyPolicyScheduleLayerUser from "Common/Models/DatabaseModels/OnCallDutyPolicyScheduleLayerUser";
-import User from "Common/Models/DatabaseModels/User";
+import OnCallDutyPolicyScheduleLayer from "../../Models/DatabaseModels/OnCallDutyPolicyScheduleLayer";
+import OnCallDutyPolicyScheduleLayerUser from "../../Models/DatabaseModels/OnCallDutyPolicyScheduleLayerUser";
+import User from "../../Models/DatabaseModels/User";
 import CaptureSpan from "../Utils/Telemetry/CaptureSpan";
-import OnCallDutyPolicySchedule from "Common/Models/DatabaseModels/OnCallDutyPolicySchedule";
+import OnCallDutyPolicySchedule from "../../Models/DatabaseModels/OnCallDutyPolicySchedule";
 import OnCallDutyPolicyEscalationRuleSchedule from "../../Models/DatabaseModels/OnCallDutyPolicyEscalationRuleSchedule";
 import OnCallDutyPolicyEscalationRuleScheduleService from "./OnCallDutyPolicyEscalationRuleScheduleService";
 import Dictionary from "../../Types/Dictionary";
@@ -31,12 +31,47 @@ import logger from "../Utils/Logger";
 import OnCallDutyPolicyFeedService from "./OnCallDutyPolicyFeedService";
 import { OnCallDutyPolicyFeedEventType } from "../../Models/DatabaseModels/OnCallDutyPolicyFeed";
 import { Green500 } from "../../Types/BrandColors";
+import OnCallDutyPolicyTimeLogService from "./OnCallDutyPolicyTimeLogService";
+import DeleteBy from "../Types/Database/DeleteBy";
+import { OnDelete } from "../Types/Database/Hooks";
 
 export class Service extends DatabaseService<OnCallDutyPolicySchedule> {
   private layerUtil = new LayerUtil();
 
   public constructor() {
     super(OnCallDutyPolicySchedule);
+  }
+
+  protected override async onBeforeDelete(
+    deleteBy: DeleteBy<OnCallDutyPolicySchedule>,
+  ): Promise<OnDelete<OnCallDutyPolicySchedule>> {
+    const callSchedules: Array<OnCallDutyPolicySchedule> = await this.findBy({
+      query: deleteBy.query,
+      select: {
+        _id: true,
+        projectId: true,
+      },
+      limit: LIMIT_PER_PROJECT,
+      skip: 0,
+      props: {
+        isRoot: true,
+      },
+    });
+
+    for (const schedule of callSchedules) {
+      OnCallDutyPolicyTimeLogService.endTimeForSchedule({
+        projectId: schedule.projectId!,
+        onCallDutyPolicyScheduleId: schedule.id!,
+        endsAt: OneUptimeDate.getCurrentDate(),
+      }).catch((err: Error) => {
+        logger.error(err);
+      });
+    }
+
+    return {
+      deleteBy: deleteBy,
+      carryForward: {},
+    };
   }
 
   public async getOnCallSchedulesWhereUserIsOnCallDuty(data: {
@@ -228,6 +263,25 @@ export class Service extends DatabaseService<OnCallDutyPolicySchedule> {
               NotificationSettingEventType.SEND_WHEN_USER_IS_NO_LONGER_ACTIVE_ON_ON_CALL_ROSTER,
           });
 
+          // add end log for user.
+          OnCallDutyPolicyTimeLogService.endTimeLogForUser({
+            userId: sendEmailToUserId,
+            onCallDutyPolicyScheduleId: data.scheduleId,
+            onCallDutyPolicyEscalationRuleId:
+              escalationRule.onCallDutyPolicyEscalationRule!.id!,
+            onCallDutyPolicyId: escalationRule.onCallDutyPolicy!.id!,
+            projectId: projectId,
+            endsAt: OneUptimeDate.getCurrentDate(),
+          }).catch((err: Error) => {
+            logger.error(
+              "Error ending time log for user: " +
+                sendEmailToUserId.toString() +
+                " for schedule: " +
+                data.scheduleId.toString(),
+            );
+            logger.error(err);
+          });
+
           const onCallDutyPolicyId: ObjectID =
             escalationRule.onCallDutyPolicy!.id!;
 
@@ -314,6 +368,25 @@ export class Service extends DatabaseService<OnCallDutyPolicySchedule> {
             callRequestMessage: callMessage,
             eventType:
               NotificationSettingEventType.SEND_WHEN_USER_IS_ON_CALL_ROSTER,
+          });
+
+          // add start log for user.
+          OnCallDutyPolicyTimeLogService.startTimeLogForUser({
+            userId: sendEmailToUserId,
+            onCallDutyPolicyScheduleId: data.scheduleId,
+            onCallDutyPolicyEscalationRuleId:
+              escalationRule.onCallDutyPolicyEscalationRule!.id!,
+            onCallDutyPolicyId: escalationRule.onCallDutyPolicy!.id!,
+            projectId: projectId,
+            startsAt: OneUptimeDate.getCurrentDate(),
+          }).catch((err: Error) => {
+            logger.error(
+              "Error starting time log for user: " +
+                sendEmailToUserId.toString() +
+                " for schedule: " +
+                data.scheduleId.toString(),
+            );
+            logger.error(err);
           });
 
           const onCallDutyPolicyId: ObjectID =

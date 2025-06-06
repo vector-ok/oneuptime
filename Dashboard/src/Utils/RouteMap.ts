@@ -123,6 +123,7 @@ export const StatusPagesRoutePath: Dictionary<string> = {
   [PageMap.STATUS_PAGE_VIEW_DOMAINS]: `${RouteParams.ModelID}/domains`,
   [PageMap.STATUS_PAGE_VIEW_EMAIL_SUBSCRIBERS]: `${RouteParams.ModelID}/email-subscribers`,
   [PageMap.STATUS_PAGE_VIEW_SMS_SUBSCRIBERS]: `${RouteParams.ModelID}/sms-subscribers`,
+  [PageMap.STATUS_PAGE_VIEW_SLACK_SUBSCRIBERS]: `${RouteParams.ModelID}/slack-subscribers`,
   [PageMap.STATUS_PAGE_VIEW_WEBHOOK_SUBSCRIBERS]: `${RouteParams.ModelID}/webhook-subscribers`,
   [PageMap.STATUS_PAGE_VIEW_HEADER_STYLE]: `${RouteParams.ModelID}/header-style`,
   [PageMap.STATUS_PAGE_VIEW_FOOTER_STYLE]: `${RouteParams.ModelID}/footer-style`,
@@ -271,6 +272,7 @@ export const OnCallDutyRoutePath: Dictionary<string> = {
   [PageMap.ON_CALL_DUTY_POLICY_VIEW_OWNERS]: `policies/${RouteParams.ModelID}/owners`,
   [PageMap.ON_CALL_DUTY_POLICY_VIEW_ESCALATION]: `policies/${RouteParams.ModelID}/escalation`,
   [PageMap.ON_CALL_DUTY_EXECUTION_LOGS]: "execution-logs",
+  [PageMap.ON_CALLDUTY_USER_TIME_LOGS]: "user-time-logs",
   [PageMap.ON_CALL_DUTY_POLICY_USER_OVERRIDES]: "user-overrides",
   [PageMap.ON_CALL_DUTY_POLICY_VIEW_USER_OVERRIDES]: `policies/${RouteParams.ModelID}/user-overrides`,
   [PageMap.ON_CALL_DUTY_EXECUTION_LOGS_TIMELINE]: `execution-logs/${RouteParams.ModelID}`,
@@ -1010,6 +1012,12 @@ const RouteMap: Dictionary<Route> = {
     }`,
   ),
 
+  [PageMap.STATUS_PAGE_VIEW_SLACK_SUBSCRIBERS]: new Route(
+    `/dashboard/${RouteParams.ProjectID}/status-pages/${
+      StatusPagesRoutePath[PageMap.STATUS_PAGE_VIEW_SLACK_SUBSCRIBERS]
+    }`,
+  ),
+
   [PageMap.STATUS_PAGE_VIEW_WEBHOOK_SUBSCRIBERS]: new Route(
     `/dashboard/${RouteParams.ProjectID}/status-pages/${
       StatusPagesRoutePath[PageMap.STATUS_PAGE_VIEW_WEBHOOK_SUBSCRIBERS]
@@ -1145,6 +1153,12 @@ const RouteMap: Dictionary<Route> = {
   [PageMap.ON_CALL_DUTY_EXECUTION_LOGS]: new Route(
     `/dashboard/${RouteParams.ProjectID}/on-call-duty/${
       OnCallDutyRoutePath[PageMap.ON_CALL_DUTY_EXECUTION_LOGS]
+    }`,
+  ),
+
+  [PageMap.ON_CALLDUTY_USER_TIME_LOGS]: new Route(
+    `/dashboard/${RouteParams.ProjectID}/on-call-duty/${
+      OnCallDutyRoutePath[PageMap.ON_CALLDUTY_USER_TIME_LOGS]
     }`,
   ),
 

@@ -23,6 +23,7 @@ import StatusPage from "Common/Models/DatabaseModels/StatusPage";
 import StatusPageAnnouncement from "Common/Models/DatabaseModels/StatusPageAnnouncement";
 import StatusPageSubscriber from "Common/Models/DatabaseModels/StatusPageSubscriber";
 import StatusPageEventType from "Common/Types/StatusPage/StatusPageEventType";
+import SlackUtil from "Common/Server/Utils/Workspace/Slack/Slack";
 
 RunCron(
   "Announcement:SendNotificationToSubscribers",
@@ -153,6 +154,25 @@ RunCron(
                     ProjectCallSMSConfigService.toTwilioConfig(
                       statuspage.callSmsConfig,
                     ),
+                }).catch((err: Error) => {
+                  logger.error(err);
+                });
+              }
+
+              if (subscriber.slackIncomingWebhookUrl) {
+                // Convert markdown to Slack format and send notification
+                const markdownMessage: string = `## 📢 Announcement - ${announcement.title || ""}
+
+**Description:** ${announcement.description || ""}
+
+[View Status Page](${statusPageURL}) | [Unsubscribe](${unsubscribeUrl})`;
+
+                // send Slack notification here.
+                SlackUtil.sendMessageToChannelViaIncomingWebhook({
+                  url: subscriber.slackIncomingWebhookUrl,
+                  text: SlackUtil.convertMarkdownToSlackRichText(
+                    markdownMessage,
+                  ),
                 }).catch((err: Error) => {
                   logger.error(err);
                 });

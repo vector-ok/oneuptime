@@ -24,6 +24,7 @@ const Monitors: FunctionComponent<PageComponentProps> = (
           projectId: ProjectUtil.getCurrentProjectId()!,
         }}
         id="monitor-status-table"
+        userPreferencesKey="monitor-status-table"
         name="Settings > Monitor Status"
         isDeleteable={true}
         isEditable={true}
@@ -129,7 +130,7 @@ const Monitors: FunctionComponent<PageComponentProps> = (
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
 
             getElement: (item: MonitorStatus): ReactElement => {
               return (

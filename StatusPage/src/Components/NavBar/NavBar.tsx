@@ -12,6 +12,7 @@ export interface ComponentProps {
   isPrivateStatusPage: boolean;
   enableEmailSubscribers: boolean;
   enableSMSSubscribers: boolean;
+  enableSlackSubscribers?: boolean;
   showIncidentsOnStatusPage: boolean;
   showAnnouncementsOnStatusPage: boolean;
   showScheduledMaintenanceEventsOnStatusPage: boolean;
@@ -25,8 +26,12 @@ const DashboardNavbar: FunctionComponent<ComponentProps> = (
     return <></>;
   }
 
+  const spaceAroundClassName: string = "justify-between";
+
   return (
-    <NavBar className="bg-white lg:flex text-center justify-between py-2 mt-5 rounded-lg shadow px-5">
+    <NavBar
+      className={`bg-white lg:flex text-center ${spaceAroundClassName} py-2 mt-5 rounded-lg shadow px-5`}
+    >
       <NavBarItem
         id="overview-nav-bar-item"
         title="Overview"
@@ -88,7 +93,9 @@ const DashboardNavbar: FunctionComponent<ComponentProps> = (
       )}
 
       {props.showSubscriberPageOnStatusPage &&
-      (props.enableEmailSubscribers || props.enableSMSSubscribers) ? (
+      (props.enableEmailSubscribers ||
+        props.enableSMSSubscribers ||
+        props.enableSlackSubscribers) ? (
         <NavBarItem
           id="subscribe-nav-bar-item"
           title="Subscribe"

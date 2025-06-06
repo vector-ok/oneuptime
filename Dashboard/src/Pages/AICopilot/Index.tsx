@@ -48,6 +48,7 @@ const CodeRepositoryPage: FunctionComponent<
         isDeleteable={false}
         isEditable={false}
         isCreateable={true}
+        userPreferencesKey="reliability-copilot-code-repositories-table"
         createVerb="Add"
         name="Git Repositories"
         isViewable={true}
@@ -158,7 +159,7 @@ const CodeRepositoryPage: FunctionComponent<
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {
@@ -193,7 +194,7 @@ const CodeRepositoryPage: FunctionComponent<
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {
