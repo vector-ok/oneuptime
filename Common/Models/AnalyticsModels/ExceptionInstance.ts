@@ -12,8 +12,8 @@ export default class ExceptionInstance extends AnalyticsBaseModel {
     super({
       tableName: "ExceptionItem",
       tableEngine: AnalyticsTableEngine.MergeTree,
-      singularName: "Exception",
-      pluralName: "Exceptions",
+      singularName: "Exception Instance",
+      pluralName: "Exception Instances",
       enableRealtimeEventsOn: {
         create: true,
       },
@@ -371,7 +371,7 @@ export default class ExceptionInstance extends AnalyticsBaseModel {
       ],
       sortKeys: ["projectId", "time", "serviceId", "fingerprint"],
       primaryKeys: ["projectId", "time", "serviceId", "fingerprint"],
-      partitionKey: "projectId",
+      partitionKey: "sipHash64(projectId) % 16",
     });
   }
 

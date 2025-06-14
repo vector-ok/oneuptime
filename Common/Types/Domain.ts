@@ -2,6 +2,7 @@ import DatabaseProperty from "./Database/DatabaseProperty";
 import BadDataException from "./Exception/BadDataException";
 import { JSONObject, ObjectType } from "./JSON";
 import { FindOperator } from "typeorm/find-options/FindOperator";
+import Zod, { ZodSchema } from "../Utils/Schema/Zod";
 
 export default class Domain extends DatabaseProperty {
   private _domain: string = "";
@@ -11,7 +12,7 @@ export default class Domain extends DatabaseProperty {
   public set domain(v: string) {
     const isValid: boolean = Domain.isValidDomain(v);
     if (!isValid) {
-      throw new BadDataException("Domain is not in valid format.");
+      throw new BadDataException("Domain " + v + " is not in valid format.");
     }
     this._domain = v;
   }
@@ -90,5 +91,19 @@ export default class Domain extends DatabaseProperty {
     }
 
     return null;
+  }
+
+  public static override getSchema(): ZodSchema {
+    return Zod.object({
+      _type: Zod.literal(ObjectType.Domain),
+      value: Zod.string().openapi({
+        type: "string",
+        example: "example.com",
+      }),
+    }).openapi({
+      type: "object",
+      description: "Domain object",
+      example: { _type: ObjectType.Domain, value: "example.com" },
+    });
   }
 }

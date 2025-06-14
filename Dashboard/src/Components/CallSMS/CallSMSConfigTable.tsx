@@ -49,6 +49,7 @@ const CustomCallSMSTable: FunctionComponent = (): ReactElement => {
       <ModelTable<ProjectCallSMSConfig>
         modelType={ProjectCallSMSConfig}
         id="call-sms-table"
+        userPreferencesKey="call-sms-table"
         actionButtons={[
           {
             title: "Send Test SMS",
@@ -212,7 +213,7 @@ const CustomCallSMSTable: FunctionComponent = (): ReactElement => {
           },
           {
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
             field: {
               description: true,
             },
@@ -253,7 +254,7 @@ const CustomCallSMSTable: FunctionComponent = (): ReactElement => {
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

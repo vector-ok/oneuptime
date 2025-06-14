@@ -1,5 +1,4 @@
 import API from "../../Utils/API/API";
-import Select from "../../Utils/BaseDatabase/Select";
 import ModelAPI from "../../Utils/ModelAPI/ModelAPI";
 import Navigation from "../../Utils/Navigation";
 import { ButtonStyleType } from "../Button/Button";
@@ -7,12 +6,13 @@ import Card from "../Card/Card";
 import BasicFormModal from "../FormModal/BasicFormModal";
 import { ModelField } from "../Forms/ModelForm";
 import ConfirmModal from "../Modal/ConfirmModal";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import HTTPResponse from "Common/Types/API/HTTPResponse";
-import Route from "Common/Types/API/Route";
-import IconProp from "Common/Types/Icon/IconProp";
-import ObjectID from "Common/Types/ObjectID";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import HTTPResponse from "../../../Types/API/HTTPResponse";
+import Route from "../../../Types/API/Route";
+import IconProp from "../../../Types/Icon/IconProp";
+import ObjectID from "../../../Types/ObjectID";
 import React, { ReactElement, useState } from "react";
+import Select from "../../../Types/BaseDatabase/Select";
 
 export interface ComponentProps<TBaseModel extends BaseModel> {
   modelType: { new (): TBaseModel };
@@ -78,7 +78,7 @@ const DuplicateModel: <TBaseModel extends BaseModel>(
         throw new Error(`Could not create ${model.singularName}`);
       }
 
-      props.onDuplicateSuccess && props.onDuplicateSuccess(newItem.data);
+      props.onDuplicateSuccess?.(newItem.data);
 
       if (props.navigateToOnSuccess) {
         Navigation.navigate(

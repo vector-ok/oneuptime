@@ -9,7 +9,7 @@ import FilterData from "../Filters/Types/FilterData";
 import Pagination from "../Pagination/Pagination";
 import ListBody from "./ListBody";
 import { ListDetailProps } from "./ListRow";
-import GenericObject from "Common/Types/GenericObject";
+import GenericObject from "../../../Types/GenericObject";
 import React, { ReactElement } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 
@@ -111,10 +111,10 @@ const List: ListFunction = <T extends GenericObject>(
             onFilterRefreshClick={props.onFilterRefreshClick}
             filters={props.filters || []}
             onFilterModalClose={() => {
-              props.onFilterModalClose && props.onFilterModalClose();
+              props.onFilterModalClose?.();
             }}
             onFilterModalOpen={() => {
-              props.onFilterModalOpen && props.onFilterModalOpen();
+              props.onFilterModalOpen?.();
             }}
             singularLabel={props.singularLabel}
             pluralLabel={props.pluralLabel}
@@ -123,9 +123,9 @@ const List: ListFunction = <T extends GenericObject>(
         <div className="">
           <DragDropContext
             onDragEnd={(result: DropResult) => {
-              result.destination?.index &&
-                props.onDragDrop &&
+              if (result.destination?.index && props.onDragDrop) {
                 props.onDragDrop(result.draggableId, result.destination.index);
+              }
             }}
           >
             {getListbody()}

@@ -3,12 +3,12 @@ import API from "../../Utils/API/API";
 import ModelAPI from "../../Utils/ModelAPI/ModelAPI";
 import ComponentLoader from "../ComponentLoader/ComponentLoader";
 import Icon, { SizeProp } from "../Icon/Icon";
-import HTTPResponse from "Common/Types/API/HTTPResponse";
-import CommonURL from "Common/Types/API/URL";
-import Dictionary from "Common/Types/Dictionary";
-import MimeType from "Common/Types/File/MimeType";
-import IconProp from "Common/Types/Icon/IconProp";
-import FileModel from "Common/Models/DatabaseModels/File";
+import HTTPResponse from "../../../Types/API/HTTPResponse";
+import CommonURL from "../../../Types/API/URL";
+import Dictionary from "../../../Types/Dictionary";
+import MimeType from "../../../Types/File/MimeType";
+import IconProp from "../../../Types/Icon/IconProp";
+import FileModel from "../../../Models/DatabaseModels/File";
 import React, {
   FunctionComponent,
   ReactElement,
@@ -114,8 +114,8 @@ const FilePicker: FunctionComponent<ComponentProps> = (
 
         setFilesModel(filesResult);
 
-        props.onBlur && props.onBlur();
-        props.onChange && props.onChange(filesResult);
+        props.onBlur?.();
+        props.onChange?.(filesResult);
       } catch (err) {
         setError(API.getFriendlyMessage(err));
       }
@@ -147,7 +147,7 @@ const FilePicker: FunctionComponent<ComponentProps> = (
                 const tempFileModel: Array<FileModel> = [...filesModel];
                 tempFileModel.splice(i, 1);
                 setFilesModel(tempFileModel);
-                props.onChange && props.onChange(tempFileModel);
+                props.onChange?.(tempFileModel);
               }}
             />
           </div>
@@ -177,8 +177,8 @@ const FilePicker: FunctionComponent<ComponentProps> = (
     <div>
       <div
         onClick={() => {
-          props.onClick && props.onClick();
-          props.onFocus && props.onFocus();
+          props.onClick?.();
+          props.onFocus?.();
         }}
         data-testid={props.dataTestId}
         className="flex max-w-lg justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6"

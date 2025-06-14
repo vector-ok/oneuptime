@@ -68,6 +68,8 @@ import OnCallDutyPolicyFeed from "./OnCallDutyPolicyFeed";
 import OnCallDutyPolicySchedule from "./OnCallDutyPolicySchedule";
 import OnCallDutyPolicyScheduleLayer from "./OnCallDutyPolicyScheduleLayer";
 import OnCallDutyPolicyScheduleLayerUser from "./OnCallDutyPolicyScheduleLayerUser";
+import OnCallDutyPolicyTimeLog from "./OnCallDutyPolicyTimeLog";
+
 import Probe from "./Probe";
 import ProbeOwnerTeam from "./ProbeOwnerTeam";
 import ProbeOwnerUser from "./ProbeOwnerUser";
@@ -101,6 +103,7 @@ import SmsLog from "./SmsLog";
 // Status Page
 import StatusPage from "./StatusPage";
 import StatusPageAnnouncement from "./StatusPageAnnouncement";
+import StatusPageAnnouncementTemplate from "./StatusPageAnnouncementTemplate";
 import StatusPageCustomField from "./StatusPageCustomField";
 import StatusPageDomain from "./StatusPageDomain";
 import StatusPageFooterLink from "./StatusPageFooterLink";
@@ -245,6 +248,7 @@ const AllModelTypes: Array<{
   StatusPageResource,
 
   StatusPageAnnouncement,
+  StatusPageAnnouncementTemplate,
   StatusPageSubscriber,
   StatusPageFooterLink,
   StatusPageHeaderLink,
@@ -372,6 +376,8 @@ const AllModelTypes: Array<{
   MonitorFeed,
 
   MetricType,
+
+  OnCallDutyPolicyTimeLog,
 ];
 
 const modelTypeMap: { [key: string]: { new (): BaseModel } } = {};

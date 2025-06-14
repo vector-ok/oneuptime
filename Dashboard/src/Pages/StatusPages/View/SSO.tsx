@@ -51,6 +51,7 @@ const SSOPage: FunctionComponent<PageComponentProps> = (
 
         <ModelTable<StatusPageSSO>
           modelType={StatusPageSSO}
+          userPreferencesKey={"status-page-sso-table"}
           query={{
             projectId: ProjectUtil.getCurrentProjectId()!,
             statusPageId: modelId.toString(),
@@ -135,6 +136,7 @@ const SSOPage: FunctionComponent<PageComponentProps> = (
                 "Members will be forwarded here when signing in to your organization",
               placeholder: "https://yourapp.example.com/apps/appId",
               stepId: "sign-on",
+              disableSpellCheck: true,
             },
             {
               field: {
@@ -147,6 +149,7 @@ const SSOPage: FunctionComponent<PageComponentProps> = (
               required: true,
               placeholder: "https://example.com",
               stepId: "sign-on",
+              disableSpellCheck: true,
             },
             {
               field: {

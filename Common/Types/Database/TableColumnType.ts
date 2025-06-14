@@ -14,6 +14,7 @@ enum ColumnType {
   ShortURL = "Short URL",
   Markdown = "Markdown",
   Domain = "Domain",
+  MonitorSteps = "Monitor Steps",
   LongURL = "URL",
   ShortText = "Text",
   OTP = "One Time Password",
@@ -38,6 +39,8 @@ enum ColumnType {
   CustomFieldType = "Custom Field Type",
   MonitorType = "Monitor Type",
   WorkflowStatus = "Workflow Status",
+  IP = "IP",
+  Port = "Port",
 }
 
 export default ColumnType;

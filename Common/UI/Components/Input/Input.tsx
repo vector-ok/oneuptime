@@ -1,8 +1,8 @@
 // Tailwind
 import { Logger } from "../../Utils/Logger";
 import Icon from "../Icon/Icon";
-import OneUptimeDate from "Common/Types/Date";
-import IconProp from "Common/Types/Icon/IconProp";
+import OneUptimeDate from "../../../Types/Date";
+import IconProp from "../../../Types/Icon/IconProp";
 import React, {
   FunctionComponent,
   ReactElement,
@@ -38,6 +38,7 @@ export interface ComponentProps {
   error?: string | undefined;
   outerDivClassName?: string | undefined;
   autoFocus?: boolean | undefined;
+  disableSpellCheck?: boolean | undefined;
 }
 
 const Input: FunctionComponent<ComponentProps> = (
@@ -159,6 +160,7 @@ const Input: FunctionComponent<ComponentProps> = (
           onFocus={props.onFocus}
           onClick={props.onClick}
           data-testid={props.dataTestId}
+          spellCheck={!props.disableSpellCheck && props.type === InputType.TEXT}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             let value: string | Date = e.target.value;
 
@@ -195,7 +197,7 @@ const Input: FunctionComponent<ComponentProps> = (
             props.onEnterPress
               ? (event: any) => {
                   if (event.key === "Enter") {
-                    props.onEnterPress && props.onEnterPress();
+                    props.onEnterPress?.();
                   }
                 }
               : undefined

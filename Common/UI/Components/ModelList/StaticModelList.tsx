@@ -1,9 +1,9 @@
 import { GetReactElementFunction } from "../../Types/FunctionTypes";
 import Button, { ButtonStyleType } from "../Button/Button";
 import Icon from "../Icon/Icon";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import IconProp from "Common/Types/Icon/IconProp";
-import Typeof from "Common/Types/Typeof";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import IconProp from "../../../Types/Icon/IconProp";
+import Typeof from "../../../Types/Typeof";
 import React, { ReactElement } from "react";
 import {
   DragDropContext,
@@ -94,7 +94,7 @@ const StaticModelList: <TBaseModel extends BaseModel>(
             </div>
           )}
 
-          {props.customElement && props.customElement(model)}
+          {props.customElement?.(model)}
         </div>
 
         {props.onDelete && (
@@ -104,7 +104,7 @@ const StaticModelList: <TBaseModel extends BaseModel>(
               buttonStyle={ButtonStyleType.OUTLINE}
               title="Delete"
               onClick={() => {
-                props.onDelete && props.onDelete(model);
+                props.onDelete?.(model);
               }}
             />
           </div>
@@ -177,9 +177,9 @@ const StaticModelList: <TBaseModel extends BaseModel>(
   return (
     <DragDropContext
       onDragEnd={(result: DropResult) => {
-        result.destination?.index &&
-          props.onDragDrop &&
+        if (result.destination?.index && props.onDragDrop) {
           props.onDragDrop(result.draggableId, result.destination.index);
+        }
       }}
     >
       {getComponent()}

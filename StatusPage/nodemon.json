@@ -1,16 +1,14 @@
 {
-    "watch": ["./*","../Common/Server", "../Common/Types", "../Common/Utils", "../Common/Models"],
+    "watch": ["./*","../Common/UI", "../Common/Types", "../Common/Utils", "../Common/Models"],
     "ext": "ts,json,tsx,env,js,jsx,hbs",
     "ignore": [
         "./public/**",
         "./public/dist/**",
-        "./dev-env/*",
-        "./dev-env/.env",
         "./build/*",
         "./build/**",
         "./build/dist/*",
         "./build/dist/**",
         "../Common/Server/**"
     ],
-    "exec": "printenv > /usr/src/app/dev-env/.env && echo 'HOST=localhost' >> /usr/src/app/dev-env/.env && echo 'USE_HTTPS=false' >> /usr/src/app/dev-env/.env && npm run dev-build && npm run start"
+    "exec": " npm run dev-build && npm run start"
 }

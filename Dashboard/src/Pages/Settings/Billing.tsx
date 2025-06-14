@@ -49,7 +49,7 @@ import React, {
 } from "react";
 import useAsyncEffect from "use-async-effect";
 
-export interface ComponentProps extends PageComponentProps {}
+export type ComponentProps = PageComponentProps;
 
 const Settings: FunctionComponent<ComponentProps> = (
   _props: ComponentProps,
@@ -402,6 +402,7 @@ const Settings: FunctionComponent<ComponentProps> = (
           <ModelTable<BillingPaymentMethod>
             modelType={BillingPaymentMethod}
             id="payment-methods-table"
+            userPreferencesKey="billing-payment-methods-table"
             isDeleteable={true}
             isEditable={false}
             isCreateable={false}

@@ -43,6 +43,7 @@ const Domains: FunctionComponent<PageComponentProps> = (): ReactElement => {
         modelType={Domain}
         showViewIdButton={true}
         name="Settings > Domain"
+        userPreferencesKey={"domains-table"}
         query={{
           projectId: ProjectUtil.getCurrentProjectId()!,
         }}
@@ -99,6 +100,7 @@ const Domains: FunctionComponent<PageComponentProps> = (): ReactElement => {
             validation: {
               minLength: 2,
             },
+            disableSpellCheck: true,
           },
         ]}
         selectMoreFields={{

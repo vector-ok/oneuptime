@@ -12,13 +12,15 @@ import LIMIT_MAX from "../../Types/Database/LimitMax";
 import BadDataException from "../../Types/Exception/BadDataException";
 import { JSONObject } from "../../Types/JSON";
 import ObjectID from "../../Types/ObjectID";
-import API from "Common/Utils/API";
-import AcmeCertificate from "Common/Models/DatabaseModels/AcmeCertificate";
-import Domain from "Common/Models/DatabaseModels/Domain";
-import StatusPageDomain from "Common/Models/DatabaseModels/StatusPageDomain";
+import API from "../../Utils/API";
+import AcmeCertificate from "../../Models/DatabaseModels/AcmeCertificate";
+import DomainModel from "../../Models/DatabaseModels/Domain";
+import StatusPageDomain from "../../Models/DatabaseModels/StatusPageDomain";
 import AcmeCertificateService from "./AcmeCertificateService";
 import Telemetry, { Span } from "../Utils/Telemetry";
 import CaptureSpan from "../Utils/Telemetry/CaptureSpan";
+import { StatusPageCNameRecord } from "../EnvironmentConfig";
+import Domain from "../Types/Domain";
 
 export class Service extends DatabaseService<StatusPageDomain> {
   public constructor() {
@@ -29,7 +31,7 @@ export class Service extends DatabaseService<StatusPageDomain> {
   protected override async onBeforeCreate(
     createBy: CreateBy<StatusPageDomain>,
   ): Promise<OnCreate<StatusPageDomain>> {
-    const domain: Domain | null = await DomainService.findOneBy({
+    const domain: DomainModel | null = await DomainService.findOneBy({
       query: {
         _id:
           createBy.data.domainId?.toString() || createBy.data.domain?._id || "",
@@ -46,8 +48,19 @@ export class Service extends DatabaseService<StatusPageDomain> {
       );
     }
 
+    if (createBy.data.subdomain) {
+      // trim and lowercase the subdomain.
+      createBy.data.subdomain = createBy.data.subdomain.trim().toLowerCase();
+    }
+
     if (domain) {
-      createBy.data.fullDomain = createBy.data.subdomain + "." + domain.domain;
+      createBy.data.fullDomain = (
+        createBy.data.subdomain +
+        "." +
+        domain.domain?.toString()
+      )
+        .toLowerCase()
+        .trim();
     }
 
     createBy.data.cnameVerificationToken = ObjectID.generate().toString();
@@ -130,7 +143,7 @@ export class Service extends DatabaseService<StatusPageDomain> {
               });
 
             if (!fetchedStatusPageDomain) {
-              throw new BadDataException("Domain not found");
+              throw new BadDataException("DomainModel not found");
             }
 
             statusPageDomain = fetchedStatusPageDomain;
@@ -224,6 +237,7 @@ export class Service extends DatabaseService<StatusPageDomain> {
 
       return true;
     } catch (err) {
+      logger.error(err);
       return false;
     }
   }
@@ -290,50 +304,110 @@ export class Service extends DatabaseService<StatusPageDomain> {
 
       logger.debug("Checking for CNAME " + fullDomain + " with token " + token);
 
-      const result: HTTPErrorResponse | HTTPResponse<JSONObject> =
-        await API.get(
-          URL.fromString(
-            "http://" +
-              fullDomain +
-              "/status-page-api/cname-verification/" +
-              token,
-          ),
-        );
+      try {
+        const result: HTTPErrorResponse | HTTPResponse<JSONObject> =
+          await API.get(
+            URL.fromString(
+              "http://" +
+                fullDomain +
+                "/status-page-api/cname-verification/" +
+                token,
+            ),
+          );
 
-      logger.debug("CNAME verification result");
-      logger.debug(result);
+        logger.debug("CNAME verification result");
+        logger.debug(result);
 
-      if (result.isSuccess()) {
-        await this.updateCnameStatusForStatusPageDomain({
-          domain: fullDomain,
-          cnameStatus: true,
-        });
+        if (result.isSuccess()) {
+          await this.updateCnameStatusForStatusPageDomain({
+            domain: fullDomain,
+            cnameStatus: true,
+          });
 
-        return true;
+          return true;
+        }
+      } catch (err) {
+        logger.debug("Failed checking for CNAME " + fullDomain);
+        logger.debug(err);
       }
 
       // try with https
 
-      const resultHttps: HTTPErrorResponse | HTTPResponse<JSONObject> =
-        await API.get(
-          URL.fromString(
-            "https://" +
-              fullDomain +
-              "/status-page-api/cname-verification/" +
-              token,
-          ),
-        );
+      try {
+        const resultHttps: HTTPErrorResponse | HTTPResponse<JSONObject> =
+          await API.get(
+            URL.fromString(
+              "https://" +
+                fullDomain +
+                "/status-page-api/cname-verification/" +
+                token,
+            ),
+          );
 
-      logger.debug("CNAME verification result for https");
-      logger.debug(resultHttps);
+        logger.debug("CNAME verification result for https");
+        logger.debug(resultHttps);
 
-      if (resultHttps.isSuccess()) {
-        await this.updateCnameStatusForStatusPageDomain({
-          domain: fullDomain,
-          cnameStatus: true,
-        });
+        if (resultHttps.isSuccess()) {
+          await this.updateCnameStatusForStatusPageDomain({
+            domain: fullDomain,
+            cnameStatus: true,
+          });
 
-        return true;
+          return true;
+        }
+      } catch (err) {
+        logger.debug("Failed checking for CNAME " + fullDomain);
+        logger.debug(err);
+      }
+
+      try {
+        if (StatusPageCNameRecord) {
+          // check if cname record is set and if it matches StatusPageCNameRecord
+
+          const cnameRecords: Array<string> = await Domain.getCnameRecords({
+            domain: fullDomain,
+          });
+
+          let cnameRecord: string | undefined = undefined;
+          if (cnameRecords.length > 0) {
+            cnameRecord = cnameRecords[0]; // take the first record.
+          }
+
+          if (!cnameRecord) {
+            logger.debug(
+              `No CNAME record found for ${fullDomain}. Expected record: ${StatusPageCNameRecord}`,
+            );
+            await this.updateCnameStatusForStatusPageDomain({
+              domain: fullDomain,
+              cnameStatus: false,
+            });
+            return false;
+          }
+
+          if (
+            cnameRecord &&
+            cnameRecord.trim().toLocaleLowerCase() ===
+              StatusPageCNameRecord.trim().toLocaleLowerCase()
+          ) {
+            logger.debug(
+              `CNAME record for ${fullDomain} matches the expected record: ${StatusPageCNameRecord}`,
+            );
+
+            await this.updateCnameStatusForStatusPageDomain({
+              domain: fullDomain,
+              cnameStatus: true,
+            });
+
+            return true;
+          }
+
+          logger.debug(
+            `CNAME record for ${fullDomain} is ${cnameRecord} and it does not match the expected record: ${StatusPageCNameRecord}`,
+          );
+        }
+      } catch (err) {
+        logger.debug("Failed checking for CNAME " + fullDomain);
+        logger.debug(err);
       }
 
       await this.updateCnameStatusForStatusPageDomain({
@@ -360,7 +434,7 @@ export class Service extends DatabaseService<StatusPageDomain> {
     domain: StatusPageDomain,
   ): Promise<void> {
     if (!domain.id) {
-      throw new BadDataException("Domain ID is required");
+      throw new BadDataException("DomainModel ID is required");
     }
 
     const statusPageDomain: StatusPageDomain | null = await this.findOneBy({
@@ -378,7 +452,7 @@ export class Service extends DatabaseService<StatusPageDomain> {
     });
 
     if (!statusPageDomain) {
-      throw new BadDataException("Domain not found");
+      throw new BadDataException("DomainModel not found");
     }
 
     logger.debug(
@@ -524,7 +598,7 @@ export class Service extends DatabaseService<StatusPageDomain> {
           },
         });
 
-        logger.debug(`Domain removed from greenlock: ${domain}`);
+        logger.debug(`DomainModel removed from greenlock: ${domain}`);
       },
     });
   }

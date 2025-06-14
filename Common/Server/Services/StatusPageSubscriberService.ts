@@ -16,7 +16,7 @@ import ProjectCallSMSConfigService from "./ProjectCallSMSConfigService";
 import ProjectService, { CurrentPlan } from "./ProjectService";
 import SmsService from "./SmsService";
 import StatusPageService from "./StatusPageService";
-import { FileRoute } from "Common/ServiceRoute";
+import { FileRoute } from "../../ServiceRoute";
 import Hostname from "../../Types/API/Hostname";
 import Protocol from "../../Types/API/Protocol";
 import URL from "../../Types/API/URL";
@@ -25,12 +25,13 @@ import LIMIT_MAX, { LIMIT_PER_PROJECT } from "../../Types/Database/LimitMax";
 import EmailTemplateType from "../../Types/Email/EmailTemplateType";
 import BadDataException from "../../Types/Exception/BadDataException";
 import ObjectID from "../../Types/ObjectID";
-import StatusPage from "Common/Models/DatabaseModels/StatusPage";
-import StatusPageResource from "Common/Models/DatabaseModels/StatusPageResource";
-import Model from "Common/Models/DatabaseModels/StatusPageSubscriber";
+import StatusPage from "../../Models/DatabaseModels/StatusPage";
+import StatusPageResource from "../../Models/DatabaseModels/StatusPageResource";
+import Model from "../../Models/DatabaseModels/StatusPageSubscriber";
 import PositiveNumber from "../../Types/PositiveNumber";
 import StatusPageEventType from "../../Types/StatusPage/StatusPageEventType";
 import NumberUtil from "../../Utils/Number";
+import SlackUtil from "../Utils/Workspace/Slack/Slack";
 
 export class Service extends DatabaseService<Model> {
   public constructor() {
@@ -143,6 +144,7 @@ export class Service extends DatabaseService<Model> {
           ignoreHooks: true,
         },
       });
+
       logger.debug(`Found Subscriber by Phone: ${JSON.stringify(subscriber)}`);
     }
 
@@ -197,11 +199,27 @@ export class Service extends DatabaseService<Model> {
     if (isEmailSubscriber && !isSubscriptionConfirmed) {
       data.data.isSubscriptionConfirmed = false;
     } else {
-      data.data.isSubscriptionConfirmed = true; // if the subscriber is not email, then set it to true for SMS subscribers.
+      data.data.isSubscriptionConfirmed = true; // if the subscriber is not email, then set it to true for SMS subscribers / slack subscribers.
     }
     logger.debug(
       `Final Subscription Confirmed: ${data.data.isSubscriptionConfirmed}`,
     );
+
+    // if slack incoming webhook is provided, then see if it starts with https://hooks.slack.com/services/
+
+    if (data.data.slackIncomingWebhookUrl) {
+      logger.debug(
+        `Slack Incoming Webhook URL: ${data.data.slackIncomingWebhookUrl}`,
+      );
+      if (
+        !SlackUtil.isValidSlackIncomingWebhookUrl(
+          data.data.slackIncomingWebhookUrl,
+        )
+      ) {
+        logger.debug("Invalid Slack Incoming Webhook URL.");
+        throw new BadDataException("Invalid Slack Incoming Webhook URL.");
+      }
+    }
 
     data.data.subscriptionConfirmationToken = NumberUtil.getRandomNumber(
       100000,
@@ -328,6 +346,38 @@ export class Service extends DatabaseService<Model> {
         await this.sendYouHaveSubscribedEmail({
           subscriberId: createdItem.id!,
         });
+      }
+    }
+
+    // if slack incoming webhook is provided, then send a message to the slack channel.
+    if (createdItem.slackIncomingWebhookUrl) {
+      logger.debug("Sending Slack notification for new subscriber.");
+      const slackMessage: string = `## 📢 New Subscription to ${statusPageName}
+
+**You have successfully subscribed to receive status updates!**
+
+🔗 **Status Page:** [${statusPageName}](${statusPageURL})
+📧 **Manage Subscription:** [Update preferences or unsubscribe](${unsubscribeLink})
+
+You will receive real-time notifications for:
+• Incidents and outages 
+• Scheduled maintenance events  
+• Service announcements
+• Status updates
+
+Stay informed about service availability! 🚀`;
+
+      logger.debug(`Slack Message: ${slackMessage}`);
+
+      try {
+        await SlackUtil.sendMessageToChannelViaIncomingWebhook({
+          url: URL.fromString(createdItem.slackIncomingWebhookUrl.toString()),
+          text: SlackUtil.convertMarkdownToSlackRichText(slackMessage),
+        });
+        logger.debug("Slack notification sent successfully.");
+      } catch (error) {
+        logger.error("Error sending Slack notification:");
+        logger.error(error);
       }
     }
 
@@ -637,6 +687,7 @@ export class Service extends DatabaseService<Model> {
         subscriberEmail: true,
         subscriberPhone: true,
         subscriberWebhook: true,
+        slackIncomingWebhookUrl: true,
         isSubscribedToAllResources: true,
         statusPageResources: true,
         isSubscribedToAllEventTypes: true,
@@ -820,5 +871,69 @@ export class Service extends DatabaseService<Model> {
 
     return statusPages;
   }
+
+  @CaptureSpan()
+  public async testSlackWebhook(data: {
+    webhookUrl: string;
+    statusPageId: ObjectID;
+  }): Promise<void> {
+    // Validate the webhook URL
+    if (!data.webhookUrl.startsWith("https://hooks.slack.com/services/")) {
+      throw new BadDataException("Invalid Slack webhook URL");
+    }
+
+    // Get status page info
+    const statusPage: StatusPage | null = await StatusPageService.findOneById({
+      id: data.statusPageId,
+      props: {
+        isRoot: true,
+      },
+      select: {
+        name: true,
+        pageTitle: true,
+        projectId: true,
+        _id: true,
+      },
+    });
+
+    if (!statusPage) {
+      throw new BadDataException("Status page not found");
+    }
+
+    // Create test notification message
+    const statusPageName: string =
+      statusPage.pageTitle || statusPage.name || "Status Page";
+    const statusPageURL: string = await StatusPageService.getStatusPageURL(
+      statusPage.id!,
+    );
+
+    // Create markdown message for Slack
+    const markdownMessage: string = `## Test Notification - ${statusPageName}
+
+**This is a test notification from OneUptime.**
+
+You have successfully configured Slack notifications for this status page.
+
+You will receive real-time notifications for:
+- Incidents
+- Scheduled Maintenance Events
+- Status Updates
+- Announcements
+
+[View Status Page](${statusPageURL})`;
+
+    // Send the test notification
+    try {
+      await SlackUtil.sendMessageToChannelViaIncomingWebhook({
+        url: URL.fromString(data.webhookUrl),
+        text: SlackUtil.convertMarkdownToSlackRichText(markdownMessage),
+      });
+    } catch (error) {
+      logger.error("Error sending test Slack notification:");
+      logger.error(error);
+      throw error;
+    }
+  }
 }
+
 export default new Service();

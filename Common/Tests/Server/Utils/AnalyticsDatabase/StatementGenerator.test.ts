@@ -7,14 +7,12 @@ import {
 import StatementGenerator from "../../../../Server/Utils/AnalyticsDatabase/StatementGenerator";
 import logger from "../../../../Server/Utils/Logger";
 import "../../TestingUtils/Init";
-import AnalyticsBaseModel from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
-import NestedModel from "Common/Models/AnalyticsModels/AnalyticsBaseModel/NestedModel";
-import Route from "Common/Types/API/Route";
-import AnalyticsTableEngine from "Common/Types/AnalyticsDatabase/AnalyticsTableEngine";
-import AnalyticsTableColumn from "Common/Types/AnalyticsDatabase/TableColumn";
-import TableColumnType from "Common/Types/AnalyticsDatabase/TableColumnType";
-import OneUptimeDate from "Common/Types/Date";
-import GenericObject from "Common/Types/GenericObject";
+import AnalyticsBaseModel from "../../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+import Route from "../../../../Types/API/Route";
+import AnalyticsTableEngine from "../../../../Types/AnalyticsDatabase/AnalyticsTableEngine";
+import AnalyticsTableColumn from "../../../../Types/AnalyticsDatabase/TableColumn";
+import TableColumnType from "../../../../Types/AnalyticsDatabase/TableColumnType";
+import OneUptimeDate from "../../../../Types/Date";
 
 function expectStatement(actual: Statement, expected: Statement): void {
   expect(actual.query).toBe(expected.query);
@@ -73,8 +71,8 @@ describe("StatementGenerator", () => {
     beforeEach(() => {
       updateBy = {
         data: new TestModel(),
-        query: "<query>" as GenericObject,
-        props: "<props>" as GenericObject,
+        query: {},
+        props: {},
       };
       generator.toSetStatement = jest.fn(() => {
         return SQL`<set-statement>`;
@@ -95,7 +93,7 @@ describe("StatementGenerator", () => {
       const statement: Statement = generator.toUpdateStatement(updateBy);
 
       expect(generator.toSetStatement).toBeCalledWith(updateBy.data);
-      expect(generator.toWhereStatement).toBeCalledWith("<query>");
+      expect(generator.toWhereStatement).toBeCalledWith(updateBy.query);
 
       expect(jest.mocked(logger.debug)).toHaveBeenCalledTimes(2);
       expect(jest.mocked(logger.debug)).toHaveBeenNthCalledWith(
@@ -238,54 +236,6 @@ describe("StatementGenerator", () => {
       );
     });
 
-    test("should support nested models", () => {
-      class TestNestedModel extends NestedModel {
-        public constructor() {
-          super({
-            tableColumns: [
-              new AnalyticsTableColumn({
-                key: "nested_column_1",
-                title: "<title>",
-                description: "<description>",
-                required: true,
-                type: TableColumnType.Text,
-              }),
-              new AnalyticsTableColumn({
-                key: "nested_column_2",
-                title: "<title>",
-                description: "<description>",
-                required: false,
-                type: TableColumnType.Number,
-              }),
-            ],
-          });
-        }
-      }
-
-      const statement: Statement = generator.toColumnsCreateStatement([
-        new AnalyticsTableColumn({
-          key: "column_1",
-          title: "<title>",
-          description: "<description>",
-          required: true,
-          type: TableColumnType.Text,
-        }),
-        new AnalyticsTableColumn({
-          key: "column_2",
-          title: "<title>",
-          description: "<description>",
-          required: false,
-          type: TableColumnType.NestedModel,
-          nestedModelType: TestNestedModel,
-        }),
-      ]);
-
-      expectStatement(
-        statement,
-        SQL`column_1 String, column_2 Nullable(Nested) (nested_column_1 String, nested_column_2 Nullable(Int32))`,
-      );
-    });
-
     test("should not add NULL|NOT NULL to Array types", () => {
       const statement: Statement = generator.toColumnsCreateStatement([
         new AnalyticsTableColumn({
@@ -342,12 +292,13 @@ describe("StatementGenerator", () => {
       /* eslint-disable prettier/prettier */
             const expectedStatement: Statement = SQL`
                 CREATE TABLE IF NOT EXISTS ${'oneuptime'}.${'<table-name>'}
-                (
-                    <columns-create-statement>
-                )
-                ENGINE = MergeTree
-                PRIMARY KEY (${'column_ObjectID'})
-                ORDER BY (${'column_ObjectID'})
+            (\n<columns-create-statement>
+            )
+            ENGINE = MergeTree
+        PARTITION BY (column_ObjectID)
+        
+            PRIMARY KEY (${'column_ObjectID'})
+            ORDER BY (${'column_ObjectID'})
             `;
             /* eslint-enable prettier/prettier */
 

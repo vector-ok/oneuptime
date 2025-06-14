@@ -4,10 +4,10 @@ import { DropdownOption } from "../Dropdown/Dropdown";
 import FieldType from "../Types/FieldType";
 import AnalyticsBaseModel, {
   AnalyticsBaseModelType,
-} from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+} from "../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
 import BaseModel, {
   DatabaseBaseModelType,
-} from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+} from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
 
 export default interface Filter<
   TEntity extends BaseModel | AnalyticsBaseModel,

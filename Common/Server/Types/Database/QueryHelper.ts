@@ -1,9 +1,9 @@
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import Dictionary from "Common/Types/Dictionary";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
-import Text from "Common/Types/Text";
-import Typeof from "Common/Types/Typeof";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import Dictionary from "../../../Types/Dictionary";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
+import Text from "../../../Types/Text";
+import Typeof from "../../../Types/Typeof";
 import { FindOperator, Raw } from "typeorm";
 import { FindWhereProperty } from "../../../Types/BaseDatabase/Query";
 import CaptureSpan from "../../Utils/Telemetry/CaptureSpan";
@@ -271,7 +271,7 @@ export default class QueryHelper {
   @CaptureSpan()
   public static greaterThanEqualTo<T extends number | Date>(
     value: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid: string = Text.generateRandomText(10);
     return Raw(
       (alias: string) => {
@@ -280,13 +280,13 @@ export default class QueryHelper {
       {
         [rid]: value,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
   public static greaterThanEqualToOrNull<T extends number | Date>(
     value: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid: string = Text.generateRandomText(10);
     return Raw(
       (alias: string) => {
@@ -295,13 +295,13 @@ export default class QueryHelper {
       {
         [rid]: value,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
   public static lessThanEqualTo<T extends number | Date>(
     value: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid: string = Text.generateRandomText(10);
     return Raw(
       (alias: string) => {
@@ -310,13 +310,28 @@ export default class QueryHelper {
       {
         [rid]: value,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
+  }
+
+  @CaptureSpan()
+  public static lessThanOrNull<T extends number | Date>(
+    value: T,
+  ): FindWhereProperty<any> {
+    const rid: string = Text.generateRandomText(10);
+    return Raw(
+      (alias: string) => {
+        return `(${alias} < :${rid} or ${alias} IS NULL)`;
+      },
+      {
+        [rid]: value,
+      },
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
   public static lessThanEqualToOrNull<T extends number | Date>(
     value: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid: string = Text.generateRandomText(10);
     return Raw(
       (alias: string) => {
@@ -325,13 +340,13 @@ export default class QueryHelper {
       {
         [rid]: value,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
   public static greaterThan<T extends number | Date>(
     value: T,
-  ): FindWhereProperty<number | Date> {
+  ): FindWhereProperty<any> {
     const rid: string = Text.generateRandomText(10);
     return Raw(
       (alias: string) => {
@@ -340,13 +355,13 @@ export default class QueryHelper {
       {
         [rid]: value,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
   public static greaterThanOrNull<T extends number | Date>(
     value: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid: string = Text.generateRandomText(10);
     return Raw(
       (alias: string) => {
@@ -355,14 +370,14 @@ export default class QueryHelper {
       {
         [rid]: value,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
   public static inBetween<T extends number | Date>(
     startValue: T,
     endValue: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid1: string = Text.generateRandomText(10);
     const rid2: string = Text.generateRandomText(10);
     return Raw(
@@ -373,14 +388,14 @@ export default class QueryHelper {
         [rid1]: startValue,
         [rid2]: endValue,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
   public static inBetweenOrNull<T extends number | Date>(
     startValue: T,
     endValue: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid1: string = Text.generateRandomText(10);
     const rid2: string = Text.generateRandomText(10);
     return Raw(
@@ -391,14 +406,14 @@ export default class QueryHelper {
         [rid1]: startValue,
         [rid2]: endValue,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
   public static notInBetween<T extends number | Date>(
     startValue: T,
     endValue: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid1: string = Text.generateRandomText(10);
     const rid2: string = Text.generateRandomText(10);
     return Raw(
@@ -409,7 +424,7 @@ export default class QueryHelper {
         [rid1]: startValue,
         [rid2]: endValue,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 
   @CaptureSpan()
@@ -466,7 +481,7 @@ export default class QueryHelper {
   @CaptureSpan()
   public static lessThan<T extends number | Date>(
     value: T,
-  ): FindWhereProperty<T> {
+  ): FindWhereProperty<any> {
     const rid: string = Text.generateRandomText(10);
     return Raw(
       (alias: string) => {
@@ -475,6 +490,6 @@ export default class QueryHelper {
       {
         [rid]: value,
       },
-    ) as FindWhereProperty<T>;
+    ) as FindWhereProperty<any>;
   }
 }

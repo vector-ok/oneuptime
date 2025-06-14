@@ -37,9 +37,9 @@ import {
 } from "@stripe/stripe-js";
 import BillingPaymentMethod from "Common/Models/DatabaseModels/BillingPaymentMethod";
 import { LIMIT_PER_PROJECT } from "Common/Types/Database/LimitMax";
-import ListResult from "Common/UI/Utils/BaseDatabase/ListResult";
+import ListResult from "Common/Types/BaseDatabase/ListResult";
 
-export interface ComponentProps extends PageComponentProps {}
+export type ComponentProps = PageComponentProps;
 
 const Settings: FunctionComponent<ComponentProps> = (
   _props: ComponentProps,
@@ -149,6 +149,7 @@ const Settings: FunctionComponent<ComponentProps> = (
         <ModelTable<BillingInvoice>
           modelType={BillingInvoice}
           id="invoices-table"
+          userPreferencesKey="billing-invoices-table"
           isDeleteable={false}
           name="Settings > Billing > Invoices"
           isEditable={false}
@@ -182,7 +183,7 @@ const Settings: FunctionComponent<ComponentProps> = (
 
               if (project) {
                 const isSubscriptionInactive: boolean =
-                  ProjectUtil.setIsSubscriptionInactive({
+                  ProjectUtil.setIsSubscriptionInactiveOrOverdue({
                     paymentProviderMeteredSubscriptionStatus:
                       project.paymentProviderMeteredSubscriptionStatus ||
                       SubscriptionStatus.Active,

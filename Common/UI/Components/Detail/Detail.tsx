@@ -11,14 +11,14 @@ import FieldType from "../Types/FieldType";
 import Field from "./Field";
 import FieldLabelElement from "./FieldLabel";
 import PlaceholderText from "./PlaceholderText";
-import FileModel from "Common/Models/DatabaseModels/DatabaseBaseModel/FileModel";
-import CodeType from "Common/Types/Code/CodeType";
-import Color from "Common/Types/Color";
-import DatabaseProperty from "Common/Types/Database/DatabaseProperty";
-import OneUptimeDate from "Common/Types/Date";
-import Dictionary from "Common/Types/Dictionary";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import GenericObject from "Common/Types/GenericObject";
+import FileModel from "../../../Models/DatabaseModels/DatabaseBaseModel/FileModel";
+import CodeType from "../../../Types/Code/CodeType";
+import Color from "../../../Types/Color";
+import DatabaseProperty from "../../../Types/Database/DatabaseProperty";
+import OneUptimeDate from "../../../Types/Date";
+import Dictionary from "../../../Types/Dictionary";
+import BadDataException from "../../../Types/Exception/BadDataException";
+import GenericObject from "../../../Types/GenericObject";
 import get from "lodash/get";
 import React, { ReactElement } from "react";
 
@@ -306,7 +306,9 @@ const Detail: DetailFunction = <T extends GenericObject>(
               "Cant format json for field: " +
                 field.title +
                 " with value: " +
-                data,
+                data +
+                " Error: " +
+                e,
             );
           }
         }

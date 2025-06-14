@@ -61,6 +61,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
         id="status-page-Footer-link"
         isDeleteable={true}
         name="Status Page > Footer Links"
+        userPreferencesKey="status-page-footer-link-table"
         sortBy="order"
         sortOrder={SortOrder.Ascending}
         isCreateable={true}
@@ -105,6 +106,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
             fieldType: FormFieldSchemaType.URL,
             required: true,
             placeholder: "https://link.com",
+            disableSpellCheck: true,
           },
         ]}
         showRefreshButton={true}

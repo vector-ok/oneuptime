@@ -21,6 +21,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
         modelType={StatusPageSubscriber}
         name="Status Page > Webhook Subscribers"
         id="table-subscriber"
+        userPreferencesKey="status-page-subscriber-table"
         isDeleteable={true}
         isCreateable={true}
         isEditable={false}
@@ -57,6 +58,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
             fieldType: FormFieldSchemaType.URL,
             required: true,
             placeholder: "URL",
+            disableSpellCheck: true,
           },
         ]}
         showRefreshButton={true}

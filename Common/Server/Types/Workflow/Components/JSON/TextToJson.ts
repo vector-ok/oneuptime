@@ -1,10 +1,13 @@
 import ComponentCode, { RunOptions, RunReturnType } from "../../ComponentCode";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import { JSONObject } from "Common/Types/JSON";
-import JSONFunctions from "Common/Types/JSONFunctions";
-import ComponentMetadata, { Port } from "Common/Types/Workflow/Component";
-import ComponentID from "Common/Types/Workflow/ComponentID";
-import JSONComponents from "Common/Types/Workflow/Components/JSON";
+import BadDataException from "../../../../../Types/Exception/BadDataException";
+import { JSONObject } from "../../../../../Types/JSON";
+import JSONFunctions from "../../../../../Types/JSONFunctions";
+import logger from "../../../../Utils/Logger";
+import ComponentMetadata, {
+  Port,
+} from "../../../../../Types/Workflow/Component";
+import ComponentID from "../../../../../Types/Workflow/ComponentID";
+import JSONComponents from "../../../../../Types/Workflow/Components/JSON";
 import CaptureSpan from "../../../../Utils/Telemetry/CaptureSpan";
 
 export default class TextToJSON extends ComponentCode {
@@ -70,6 +73,7 @@ export default class TextToJSON extends ComponentCode {
         executePort: successPort,
       });
     } catch (err) {
+      logger.error(err);
       options.log("text is not in the correct format.");
       return Promise.resolve({
         returnValues: {},

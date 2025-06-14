@@ -24,6 +24,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
         modelType={StatusPageGroup}
         id="status-page-group"
         name="Status Page > Groups"
+        userPreferencesKey="status-page-group-table"
         isDeleteable={true}
         sortBy="order"
         showViewIdButton={true}

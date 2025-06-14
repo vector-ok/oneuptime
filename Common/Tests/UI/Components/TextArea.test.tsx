@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/extend-expect";
 import { fireEvent, render } from "@testing-library/react";
 import React from "react";
 import { describe, expect, test } from "@jest/globals";
-import getJestMockFunction, { MockFunction } from "Common/Tests/MockType";
+import getJestMockFunction, { MockFunction } from "../../../Tests/MockType";
 
 describe("TextArea", () => {
   test("renders textarea element with initialValue only", () => {
@@ -25,6 +25,7 @@ describe("TextArea", () => {
         tabIndex={1}
         error="error"
         autoFocus={true}
+        disableSpellCheck={false}
       />,
     );
     const textarea: HTMLElement = getByRole("textbox");
@@ -149,5 +150,26 @@ describe("TextArea", () => {
     expect(onChange).toHaveBeenCalledWith("");
     expect(getByDisplayValue("")).toBeInTheDocument();
     expect(queryByDisplayValue("\n")).not.toBeInTheDocument();
+  });
+
+  test("enables spellcheck by default", () => {
+    const { getByRole } = render(<TextArea />);
+    const textarea: HTMLElement = getByRole("textbox");
+
+    expect(textarea).toHaveAttribute("spellcheck", "true");
+  });
+
+  test("disables spellcheck when disableSpellCheck is true", () => {
+    const { getByRole } = render(<TextArea disableSpellCheck={true} />);
+    const textarea: HTMLElement = getByRole("textbox");
+
+    expect(textarea).toHaveAttribute("spellcheck", "false");
+  });
+
+  test("enables spellcheck when disableSpellCheck is false", () => {
+    const { getByRole } = render(<TextArea disableSpellCheck={false} />);
+    const textarea: HTMLElement = getByRole("textbox");
+
+    expect(textarea).toHaveAttribute("spellcheck", "true");
   });
 });

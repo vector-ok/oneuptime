@@ -24,15 +24,15 @@ import ObjectID from "../../Types/ObjectID";
 import PositiveNumber from "../../Types/PositiveNumber";
 import Typeof from "../../Types/Typeof";
 import UserNotificationEventType from "../../Types/UserNotification/UserNotificationEventType";
-import Model from "Common/Models/DatabaseModels/Incident";
-import IncidentOwnerTeam from "Common/Models/DatabaseModels/IncidentOwnerTeam";
-import IncidentOwnerUser from "Common/Models/DatabaseModels/IncidentOwnerUser";
-import IncidentState from "Common/Models/DatabaseModels/IncidentState";
-import IncidentStateTimeline from "Common/Models/DatabaseModels/IncidentStateTimeline";
-import Monitor from "Common/Models/DatabaseModels/Monitor";
-import MonitorStatus from "Common/Models/DatabaseModels/MonitorStatus";
-import MonitorStatusTimeline from "Common/Models/DatabaseModels/MonitorStatusTimeline";
-import User from "Common/Models/DatabaseModels/User";
+import Model from "../../Models/DatabaseModels/Incident";
+import IncidentOwnerTeam from "../../Models/DatabaseModels/IncidentOwnerTeam";
+import IncidentOwnerUser from "../../Models/DatabaseModels/IncidentOwnerUser";
+import IncidentState from "../../Models/DatabaseModels/IncidentState";
+import IncidentStateTimeline from "../../Models/DatabaseModels/IncidentStateTimeline";
+import Monitor from "../../Models/DatabaseModels/Monitor";
+import MonitorStatus from "../../Models/DatabaseModels/MonitorStatus";
+import MonitorStatusTimeline from "../../Models/DatabaseModels/MonitorStatusTimeline";
+import User from "../../Models/DatabaseModels/User";
 import { IsBillingEnabled } from "../EnvironmentConfig";
 import MetricService from "./MetricService";
 import IncidentMetricType from "../../Types/Incident/IncidentMetricType";
@@ -46,7 +46,7 @@ import TelemetryType from "../../Types/Telemetry/TelemetryType";
 import logger from "../Utils/Logger";
 import Semaphore, {
   SemaphoreMutex,
-} from "Common/Server/Infrastructure/Semaphore";
+} from "../../Server/Infrastructure/Semaphore";
 import IncidentFeedService from "./IncidentFeedService";
 import { IncidentFeedEventType } from "../../Models/DatabaseModels/IncidentFeed";
 import { Gray500, Red500 } from "../../Types/BrandColors";
@@ -1931,6 +1931,59 @@ ${incidentSeverity.name}
     }
 
     return incident.incidentNumber ? Number(incident.incidentNumber) : null;
+  }
+
+  /**
+   * Ensures the currentIncidentStateId of the incident matches the latest timeline entry.
+   */
+  public async refreshIncidentCurrentStatus(
+    incidentId: ObjectID,
+  ): Promise<void> {
+    const incident: Model | null = await this.findOneById({
+      id: incidentId,
+      select: {
+        _id: true,
+        projectId: true,
+        currentIncidentStateId: true,
+      },
+      props: { isRoot: true },
+    });
+    if (!incident || !incident.projectId) {
+      return;
+    }
+    const latestTimeline: IncidentStateTimeline | null =
+      await IncidentStateTimelineService.findOneBy({
+        query: {
+          incidentId: incident.id!,
+          projectId: incident.projectId,
+        },
+        sort: {
+          startsAt: SortOrder.Descending,
+        },
+        select: {
+          incidentStateId: true,
+        },
+        props: {
+          isRoot: true,
+        },
+      });
+    if (
+      latestTimeline &&
+      latestTimeline.incidentStateId &&
+      incident.currentIncidentStateId?.toString() !==
+        latestTimeline.incidentStateId.toString()
+    ) {
+      await this.updateOneBy({
+        query: { _id: incident.id!.toString() },
+        data: {
+          currentIncidentStateId: latestTimeline.incidentStateId,
+        },
+        props: { isRoot: true },
+      });
+      logger.info(
+        `Updated Incident ${incident.id} current state to ${latestTimeline.incidentStateId}`,
+      );
+    }
   }
 }
 

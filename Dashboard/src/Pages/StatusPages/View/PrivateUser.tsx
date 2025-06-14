@@ -21,6 +21,7 @@ const StatusPageDelete: FunctionComponent<
         modelType={StatusPagePrivateUser}
         id="status-page-group"
         name="Status Page > Private Users"
+        userPreferencesKey="status-page-private-user-table"
         isDeleteable={true}
         showViewIdButton={true}
         isCreateable={true}
@@ -50,6 +51,7 @@ const StatusPageDelete: FunctionComponent<
             fieldType: FormFieldSchemaType.Email,
             required: true,
             placeholder: "user@company.com",
+            disableSpellCheck: true,
           },
         ]}
         showRefreshButton={true}

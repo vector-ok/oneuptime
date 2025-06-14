@@ -171,7 +171,7 @@ const TeamView: FunctionComponent<PageComponentProps> = (): ReactElement => {
               field: {
                 scheduleNextEventAt: true,
               },
-              title: "Next event will be autoamtically scheduled at",
+              title: "Next event will be automatically scheduled at",
               fieldType: FieldType.DateTime,
               showIf: (item: ScheduledMaintenanceTemplate): boolean => {
                 return Boolean(item.isRecurringEvent);
@@ -280,6 +280,7 @@ const TeamView: FunctionComponent<PageComponentProps> = (): ReactElement => {
       <ModelTable<ScheduledMaintenanceTemplateOwnerTeam>
         modelType={ScheduledMaintenanceTemplateOwnerTeam}
         id="table-ScheduledMaintenance-owner-team"
+        userPreferencesKey="scheduled-maintenance-owner-team-table"
         name="ScheduledMaintenance Template > Owner Team"
         singularName="Team"
         isDeleteable={true}
@@ -368,6 +369,7 @@ const TeamView: FunctionComponent<PageComponentProps> = (): ReactElement => {
       <ModelTable<ScheduledMaintenanceTemplateOwnerUser>
         modelType={ScheduledMaintenanceTemplateOwnerUser}
         id="table-ScheduledMaintenance-owner-team"
+        userPreferencesKey="scheduled-maintenance-owner-user-table"
         name="ScheduledMaintenance > Owner Team"
         isDeleteable={true}
         singularName="User"
