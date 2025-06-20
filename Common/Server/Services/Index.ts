@@ -94,6 +94,7 @@ import SmsLogService from "./SmsLogService";
 import SmsService from "./SmsService";
 import SpanService from "./SpanService";
 import StatusPageAnnouncementService from "./StatusPageAnnouncementService";
+import StatusPageAnnouncementTemplateService from "./StatusPageAnnouncementTemplateService";
 import StatusPageCustomFieldService from "./StatusPageCustomFieldService";
 import StatusPageDomainService from "./StatusPageDomainService";
 import StatusPageFooterLinkService from "./StatusPageFooterLinkService";
@@ -127,7 +128,7 @@ import WorkflowLogService from "./WorkflowLogService";
 // Workflows.
 import WorkflowService from "./WorkflowService";
 import WorkflowVariablesService from "./WorkflowVariableService";
-import AnalyticsBaseModel from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+import AnalyticsBaseModel from "../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
 import CopilotPullRequestService from "./CopilotPullRequestService";
 import ServiceCatalogDependencyService from "./ServiceCatalogDependencyService";
 import TelemetryAttributeService from "./TelemetryAttributeService";
@@ -162,7 +163,10 @@ import OnCallDutyPolicyUserOverrideService from "./OnCallDutyPolicyUserOverrideS
 
 import MonitorLogService from "./MonitorLogService";
 
+import OnCallDutyPolicyTimeLogService from "./OnCallDutyPolicyTimeLogService";
+
 const services: Array<BaseService> = [
+  OnCallDutyPolicyTimeLogService,
   AcmeCertificateService,
   PromoCodeService,
 
@@ -246,6 +250,7 @@ const services: Array<BaseService> = [
   SmsService,
 
   StatusPageAnnouncementService,
+  StatusPageAnnouncementTemplateService,
   StatusPageCustomFieldService,
   StatusPageDomainService,
   StatusPageFooterLinkService,

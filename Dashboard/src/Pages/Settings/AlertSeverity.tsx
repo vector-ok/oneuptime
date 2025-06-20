@@ -18,6 +18,7 @@ const AlertSeverityPage: FunctionComponent<
       <ModelTable<AlertSeverity>
         modelType={AlertSeverity}
         id="alert-state-table"
+        userPreferencesKey="alert-severity-table"
         name="Settings > Alert Severity"
         isDeleteable={true}
         isEditable={true}
@@ -56,7 +57,7 @@ const AlertSeverityPage: FunctionComponent<
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
 
             getElement: (item: AlertSeverity): ReactElement => {
               return (

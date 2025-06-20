@@ -19,15 +19,15 @@ import logger from "./Logger";
 import "./Process";
 import Response from "./Response";
 import { api } from "@opentelemetry/sdk-node";
-import StatusCode from "Common/Types/API/StatusCode";
-import Exception from "Common/Types/Exception/Exception";
-import NotFoundException from "Common/Types/Exception/NotFoundException";
-import ServerException from "Common/Types/Exception/ServerException";
-import { PromiseVoidFunction } from "Common/Types/FunctionTypes";
-import { JSONObject } from "Common/Types/JSON";
-import JSONFunctions from "Common/Types/JSONFunctions";
-import Port from "Common/Types/Port";
-import Typeof from "Common/Types/Typeof";
+import StatusCode from "../../Types/API/StatusCode";
+import Exception from "../../Types/Exception/Exception";
+import NotFoundException from "../../Types/Exception/NotFoundException";
+import ServerException from "../../Types/Exception/ServerException";
+import { PromiseVoidFunction } from "../../Types/FunctionTypes";
+import { JSONObject } from "../../Types/JSON";
+import JSONFunctions from "../../Types/JSONFunctions";
+import Port from "../../Types/Port";
+import Typeof from "../../Types/Typeof";
 import CookieParser from "cookie-parser";
 import cors from "cors";
 import zlib from "zlib";
@@ -198,9 +198,9 @@ const init: InitFunction = async (
     app.use(`/${appName}`, ExpressStatic("/usr/src/app/public"));
 
     app.get(
-      `/${appName}/dist/bundle.js`,
+      `/${appName}/dist/Index.js`,
       (_req: ExpressRequest, res: ExpressResponse) => {
-        res.sendFile("/usr/src/app/public/dist/bundle.js");
+        res.sendFile("/usr/src/app/public/dist/Index.js");
       },
     );
 

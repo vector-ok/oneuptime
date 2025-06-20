@@ -468,6 +468,12 @@ enum Permission {
   ReadStatusPageAnnouncement = "ReadStatusPageAnnouncement",
   DeleteStatusPageAnnouncement = "DeleteStatusPageAnnouncement",
 
+  // Status Page Announcement Template Permissions (Owner + Admin Permission by default)
+  CreateStatusPageAnnouncementTemplate = "CreateStatusPageAnnouncementTemplate",
+  EditStatusPageAnnouncementTemplate = "EditStatusPageAnnouncementTemplate",
+  ReadStatusPageAnnouncementTemplate = "ReadStatusPageAnnouncementTemplate",
+  DeleteStatusPageAnnouncementTemplate = "DeleteStatusPageAnnouncementTemplate",
+
   // Resource Permissions (Team Permission)
   CreateIncidentInternalNote = "CreateIncidentInternalNote",
   EditIncidentInternalNote = "EditIncidentInternalNote",
@@ -531,6 +537,8 @@ enum Permission {
   EditOnCallDutyPolicyUserOverride = "EditOnCallDutyPolicyUserOverride",
   DeleteOnCallDutyPolicyUserOverride = "DeleteOnCallDutyPolicyUserOverride",
   ReadOnCallDutyPolicyUserOverride = "ReadOnCallDutyPolicyUserOverride",
+
+  ReadOnCallDutyPolicyTimeLog = "ReadOnCallDutyPolicyTimeLog",
 
   // Resource Permissions (Team Permission)
   CreateProjectOnCallDutyPolicyEscalationRuleUser = "CreateProjectOnCallDutyPolicyEscalationRuleUser",
@@ -1393,34 +1401,100 @@ export class PermissionHelper {
       },
 
       {
-        permission: Permission.CreateStatusPageAnnouncement,
-        title: "Create Monitor Status",
+        permission: Permission.CreateStatusPageAnnouncementTemplate,
+        title: "Create Status Page Announcement Template",
         description:
-          "This permission can create monitor statuses this project.",
+          "This permission can create Status Page Announcement Templates in this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+      {
+        permission: Permission.DeleteStatusPageAnnouncementTemplate,
+        title: "Delete Status Page Announcement Template",
+        description:
+          "This permission can delete Status Page Announcement Templates of this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+      {
+        permission: Permission.EditStatusPageAnnouncementTemplate,
+        title: "Edit Status Page Announcement Template",
+        description:
+          "This permission can edit Status Page Announcement Templates of this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+      {
+        permission: Permission.ReadStatusPageAnnouncementTemplate,
+        title: "Read Status Page Announcement Template",
+        description:
+          "This permission can read Status Page Announcement Templates of this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+
+      {
+        permission: Permission.CreateStatusPageAnnouncement,
+        title: "Create Status Page Announcement",
+        description:
+          "This permission can create Status Page Announcements in this project.",
         isAssignableToTenant: true,
         isAccessControlPermission: false,
       },
       {
         permission: Permission.DeleteStatusPageAnnouncement,
-        title: "Delete Monitor Status",
+        title: "Delete Status Page Announcement",
         description:
-          "This permission can delete monitor statuses of this project.",
+          "This permission can delete Status Page Announcements of this project.",
         isAssignableToTenant: true,
         isAccessControlPermission: false,
       },
       {
         permission: Permission.EditStatusPageAnnouncement,
-        title: "Edit Monitor Status",
+        title: "Edit Status Page Announcement",
         description:
-          "This permission can edit monitor statuses of this project.",
+          "This permission can edit Status Page Announcements of this project.",
         isAssignableToTenant: true,
         isAccessControlPermission: false,
       },
       {
         permission: Permission.ReadStatusPageAnnouncement,
-        title: "Read Monitor Status",
+        title: "Read Status Page Announcement",
         description:
-          "This permission can read monitor statuses of this project.",
+          "This permission can read Status Page Announcements of this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+
+      {
+        permission: Permission.CreateStatusPageAnnouncementTemplate,
+        title: "Create Status Page Announcement Template",
+        description:
+          "This permission can create Status Page Announcement Templates in this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+      {
+        permission: Permission.DeleteStatusPageAnnouncementTemplate,
+        title: "Delete Status Page Announcement Template",
+        description:
+          "This permission can delete Status Page Announcement Templates of this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+      {
+        permission: Permission.EditStatusPageAnnouncementTemplate,
+        title: "Edit Status Page Announcement Template",
+        description:
+          "This permission can edit Status Page Announcement Templates of this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+      {
+        permission: Permission.ReadStatusPageAnnouncementTemplate,
+        title: "Read Status Page Announcement Template",
+        description:
+          "This permission can read Status Page Announcement Templates of this project.",
         isAssignableToTenant: true,
         isAccessControlPermission: false,
       },
@@ -2420,6 +2494,15 @@ export class PermissionHelper {
         title: "Read On-Call Duty Policy Escalation Rule",
         description:
           "This permission can read on-call duty escalation rule of this project.",
+        isAssignableToTenant: true,
+        isAccessControlPermission: false,
+      },
+
+      {
+        permission: Permission.ReadOnCallDutyPolicyTimeLog,
+        title: "Create On-Call Policy Time Log",
+        description:
+          "This permission can read on-call policy time log this project.",
         isAssignableToTenant: true,
         isAccessControlPermission: false,
       },

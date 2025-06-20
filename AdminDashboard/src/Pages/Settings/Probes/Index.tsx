@@ -57,6 +57,7 @@ const Settings: FunctionComponent = (): ReactElement => {
       />
 
       <ModelTable<Probe>
+        userPreferencesKey={"admin-probes-table"}
         modelType={Probe}
         id="probes-table"
         name="Settings > Global Probes"
@@ -151,7 +152,7 @@ const Settings: FunctionComponent = (): ReactElement => {
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
         columns={[
@@ -172,7 +173,7 @@ const Settings: FunctionComponent = (): ReactElement => {
             },
             noValueMessage: "-",
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {

@@ -8,12 +8,12 @@ import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import BasicFormModal from "../FormModal/BasicFormModal";
 import BaseModel, {
   DatabaseBaseModelType,
-} from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import { LIMIT_PER_PROJECT } from "Common/Types/Database/LimitMax";
-import { PromiseVoidFunction } from "Common/Types/FunctionTypes";
-import IconProp from "Common/Types/Icon/IconProp";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
+} from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import { LIMIT_PER_PROJECT } from "../../../Types/Database/LimitMax";
+import { PromiseVoidFunction } from "../../../Types/FunctionTypes";
+import IconProp from "../../../Types/Icon/IconProp";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
 import React, { FunctionComponent, ReactElement, useState } from "react";
 import useAsyncEffect from "use-async-effect";
 
@@ -51,7 +51,7 @@ const CustomFieldsDetail: FunctionComponent<ComponentProps> = (
           skip: 0,
           select: {
             name: true,
-            type: true,
+            customFieldType: true,
             description: true,
           } as any,
           sort: {},
@@ -134,7 +134,7 @@ const CustomFieldsDetail: FunctionComponent<ComponentProps> = (
                 key: (schemaItem as any).name,
                 title: (schemaItem as any).name,
                 description: (schemaItem as any).description,
-                fieldType: (schemaItem as any).type,
+                fieldType: (schemaItem as any).customFieldType,
                 placeholder: "No data entered",
               };
             })}
@@ -160,7 +160,7 @@ const CustomFieldsDetail: FunctionComponent<ComponentProps> = (
                   },
                   title: (schemaItem as any).name,
                   description: (schemaItem as any).description,
-                  fieldType: (schemaItem as any).type,
+                  fieldType: (schemaItem as any).customFieldType,
                   required: false,
                   placeholder: "",
                 };

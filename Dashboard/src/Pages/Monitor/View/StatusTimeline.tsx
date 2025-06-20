@@ -44,6 +44,7 @@ const StatusTimeline: FunctionComponent<PageComponentProps> = (
         modelType={MonitorStatusTimeline}
         id="table-monitor-status-timeline"
         name="Monitor > Status Timeline"
+        userPreferencesKey="monitor-status-timeline-table"
         isDeleteable={true}
         showViewIdButton={true}
         isCreateable={true}

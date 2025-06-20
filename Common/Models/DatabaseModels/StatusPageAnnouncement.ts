@@ -318,7 +318,7 @@ export default class StatusPageAnnouncement extends BaseModel {
     required: true,
     type: TableColumnType.Markdown,
     title: "Announcement Description",
-    description: "Text of the announcement. This is in Markdown.",
+    description: "Text of the announcement. This can be in Markdown format.",
   })
   @Column({
     nullable: false,

@@ -6,27 +6,29 @@ import Sort from "../../Types/AnalyticsDatabase/Sort";
 import UpdateBy from "../../Types/AnalyticsDatabase/UpdateBy";
 import logger from "../Logger";
 import { SQL, Statement } from "./Statement";
-import AnalyticsBaseModel from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+import AnalyticsBaseModel from "../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
 import CommonModel, {
   Record,
   RecordValue,
-} from "Common/Models/AnalyticsModels/AnalyticsBaseModel/CommonModel";
-import AnalyticsTableColumn from "Common/Types/AnalyticsDatabase/TableColumn";
-import TableColumnType from "Common/Types/AnalyticsDatabase/TableColumnType";
-import GreaterThan from "Common/Types/BaseDatabase/GreaterThan";
-import GreaterThanOrEqual from "Common/Types/BaseDatabase/GreaterThanOrEqual";
-import InBetween from "Common/Types/BaseDatabase/InBetween";
-import Includes from "Common/Types/BaseDatabase/Includes";
-import IsNull from "Common/Types/BaseDatabase/IsNull";
-import LessThan from "Common/Types/BaseDatabase/LessThan";
-import LessThanOrEqual from "Common/Types/BaseDatabase/LessThanOrEqual";
-import NotEqual from "Common/Types/BaseDatabase/NotEqual";
-import Search from "Common/Types/BaseDatabase/Search";
-import SortOrder from "Common/Types/BaseDatabase/SortOrder";
-import OneUptimeDate from "Common/Types/Date";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import { JSONObject } from "Common/Types/JSON";
-import JSONFunctions from "Common/Types/JSONFunctions";
+} from "../../../Models/AnalyticsModels/AnalyticsBaseModel/CommonModel";
+import AnalyticsTableColumn from "../../../Types/AnalyticsDatabase/TableColumn";
+import TableColumnType from "../../../Types/AnalyticsDatabase/TableColumnType";
+import GreaterThan from "../../../Types/BaseDatabase/GreaterThan";
+import GreaterThanOrEqual from "../../../Types/BaseDatabase/GreaterThanOrEqual";
+import InBetween from "../../../Types/BaseDatabase/InBetween";
+import Includes from "../../../Types/BaseDatabase/Includes";
+import IsNull from "../../../Types/BaseDatabase/IsNull";
+import LessThan from "../../../Types/BaseDatabase/LessThan";
+import LessThanOrEqual from "../../../Types/BaseDatabase/LessThanOrEqual";
+import GreaterThanOrNull from "../../../Types/BaseDatabase/GreaterThanOrNull";
+import LessThanOrNull from "../../../Types/BaseDatabase/LessThanOrNull";
+import NotEqual from "../../../Types/BaseDatabase/NotEqual";
+import Search from "../../../Types/BaseDatabase/Search";
+import SortOrder from "../../../Types/BaseDatabase/SortOrder";
+import OneUptimeDate from "../../../Types/Date";
+import BadDataException from "../../../Types/Exception/BadDataException";
+import { JSONObject } from "../../../Types/JSON";
+import JSONFunctions from "../../../Types/JSONFunctions";
 import AggregateBy, {
   AggregateUtil,
 } from "../../Types/AnalyticsDatabase/AggregateBy";
@@ -51,12 +53,18 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
     const whereStatement: Statement = this.toWhereStatement(updateBy.query);
 
     /* eslint-disable prettier/prettier */
-        const statement: Statement = SQL`
-            ALTER TABLE ${this.database.getDatasourceOptions().database!}.${this.model.tableName
+    const statement: Statement = SQL`
+            ALTER TABLE ${this.database.getDatasourceOptions().database!}.${
+              this.model.tableName
             }
-            UPDATE `.append(setStatement).append(SQL`
-            WHERE TRUE `).append(whereStatement);
-        /* eslint-enable prettier/prettier */
+            UPDATE `
+      .append(setStatement)
+      .append(
+        SQL`
+            WHERE TRUE `
+      )
+      .append(whereStatement);
+    /* eslint-enable prettier/prettier */
 
     logger.debug(`${this.model.tableName} Update Statement`);
     logger.debug(statement);
@@ -69,27 +77,7 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
   ): Array<string> {
     const columnNames: Array<string> = [];
     for (const column of tableColumns) {
-      if (column.type === TableColumnType.NestedModel) {
-        // Example of nested model query:
-
-        /**
-                 * 
-                 * INSERT INTO opentelemetry_spans (trace_id, span_id, attributes.key, attributes.value) VALUES 
-                    ('trace1', 'span1', ['key1', 'key2'], ['value1', 'value2']),
-                    ('trace2', 'span2', ['keyA', 'keyB'], ['valueA', 'valueB']);
-                 */
-
-        // Nested Model Support.
-        const nestedModelColumnNames: Array<string> = this.getColumnNames(
-          column.nestedModel!.tableColumns,
-        );
-
-        for (const nestedModelColumnName of nestedModelColumnNames) {
-          columnNames.push(`${column.key}.${nestedModelColumnName}`);
-        }
-      } else {
-        columnNames.push(column.key);
-      }
+      columnNames.push(column.key);
     }
 
     return columnNames;
@@ -166,45 +154,12 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
     const record: Record = [];
 
     for (const column of item.getTableColumns()) {
-      if (column.type === TableColumnType.NestedModel) {
-        // Nested Model Support.
+      const value: RecordValue | undefined = this.sanitizeValue(
+        item.getColumnValue(column.key),
+        column,
+      );
 
-        // THis is very werid, but the output should work in a query like this:
-
-        /**
-                 * 
-                 * INSERT INTO opentelemetry_spans (trace_id, span_id, attributes.key, attributes.value) VALUES 
-                    ('trace1', 'span1', ['key1', 'key2'], ['value1', 'value2']),
-                    ('trace2', 'span2', ['keyA', 'keyB'], ['valueA', 'valueB']);
-                 */
-
-        for (const subColumn of column.nestedModel!.tableColumns) {
-          const subRecord: Record = [];
-
-          for (const nestedModelItem of item.getColumnValue(
-            column.key,
-          ) as Array<CommonModel>) {
-            const value: RecordValue = this.sanitizeValue(
-              nestedModelItem.getColumnValue(subColumn.key),
-              subColumn,
-              {
-                isNestedModel: true,
-              },
-            );
-
-            subRecord.push(value);
-          }
-
-          record.push(subRecord);
-        }
-      } else {
-        const value: RecordValue | undefined = this.sanitizeValue(
-          item.getColumnValue(column.key),
-          column,
-        );
-
-        record.push(value);
-      }
+      record.push(value);
     }
 
     return record;
@@ -381,6 +336,20 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
             value: value,
             type: tableColumn.type,
           }}`,
+        );
+      } else if (value instanceof LessThanOrNull) {
+        whereStatement.append(
+          SQL`AND (${key} <= ${{
+            value: value,
+            type: tableColumn.type,
+          }} OR ${key} IS NULL)`,
+        );
+      } else if (value instanceof GreaterThanOrNull) {
+        whereStatement.append(
+          SQL`AND (${key} >= ${{
+            value: value,
+            type: tableColumn.type,
+          }} OR ${key} IS NULL)`,
         );
       } else if (value instanceof GreaterThanOrEqual) {
         whereStatement.append(
@@ -609,16 +578,6 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
         columns.append(SQL`, `);
       }
 
-      let nestedModelColumns: Statement | null = null;
-
-      if (column.type === TableColumnType.NestedModel) {
-        nestedModelColumns = SQL`(`
-          .append(
-            this.toColumnsCreateStatement(column.nestedModel!.tableColumns),
-          )
-          .append(SQL`)`);
-      }
-
       // special case - ClickHouse does not support using an a query parameter
       // to specify the column name when creating the table
       const keyStatement: string = column.key;
@@ -633,10 +592,6 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
                 .append(this.toColumnType(column.type))
                 .append(SQL`)`),
         );
-
-      if (nestedModelColumns) {
-        columns.append(SQL` `).append(nestedModelColumns);
-      }
     }
 
     return columns;
@@ -656,26 +611,34 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
       "Array(String)": TableColumnType.ArrayText,
       "Array(Int32)": TableColumnType.ArrayNumber,
       JSON: TableColumnType.JSON, //JSONArray is also JSON
-      Nested: TableColumnType.NestedModel,
       Bool: TableColumnType.Boolean,
     }[clickhouseType];
   }
 
   public toColumnType(type: TableColumnType): Statement {
-    return {
+    const statement: Statement | undefined = {
       [TableColumnType.Text]: SQL`String`,
       [TableColumnType.ObjectID]: SQL`String`,
       [TableColumnType.Boolean]: SQL`Bool`,
       [TableColumnType.Number]: SQL`Int32`,
       [TableColumnType.Decimal]: SQL`Double`,
+      [TableColumnType.IP]: SQL`String`,
+      [TableColumnType.Port]: SQL`String`,
       [TableColumnType.Date]: SQL`DateTime`,
       [TableColumnType.JSON]: SQL`String`, // we use JSON as a string because ClickHouse has really good JSON support for string types
       [TableColumnType.JSONArray]: SQL`String`, // we use JSON as a string because ClickHouse has really good JSON support for string types
-      [TableColumnType.NestedModel]: SQL`Nested`,
       [TableColumnType.ArrayNumber]: SQL`Array(Int32)`,
       [TableColumnType.ArrayText]: SQL`Array(String)`,
       [TableColumnType.LongNumber]: SQL`Int128`,
     }[type];
+
+    if (!statement) {
+      throw new BadDataException(
+        `Unknown column type: ${type}. Please add support for this column type.`,
+      );
+    }
+
+    return statement;
   }
 
   public toDoesColumnExistStatement(columnName: string): string {
@@ -735,8 +698,8 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
             )
             ENGINE = `,
       )
-      .append(tableEngineStatement).append(SQL`
-        PARTITION BY ${partitionKey}
+      .append(tableEngineStatement).append(`
+        PARTITION BY (${partitionKey})
         `).append(SQL`
             PRIMARY KEY (`);
 

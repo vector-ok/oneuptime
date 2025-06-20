@@ -26,6 +26,7 @@ const Users: FunctionComponent = (): ReactElement => {
     >
       <ModelTable<User>
         modelType={User}
+        userPreferencesKey="admin-users-table"
         id="users-table"
         isDeleteable={false}
         isEditable={false}
@@ -47,6 +48,7 @@ const Users: FunctionComponent = (): ReactElement => {
             fieldType: FormFieldSchemaType.Email,
             required: true,
             placeholder: "email@company.com",
+            disableSpellCheck: true,
           },
           {
             field: {
@@ -56,6 +58,7 @@ const Users: FunctionComponent = (): ReactElement => {
             fieldType: FormFieldSchemaType.Password,
             required: true,
             placeholder: "Password",
+            disableSpellCheck: true,
           },
           {
             field: {

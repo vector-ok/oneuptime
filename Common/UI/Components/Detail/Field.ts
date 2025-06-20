@@ -2,9 +2,9 @@ import AlignItem from "../../Types/AlignItem";
 import { DropdownOption } from "../Dropdown/Dropdown";
 import FieldType from "../Types/FieldType";
 import { Size } from "./FieldLabel";
-import Route from "Common/Types/API/Route";
-import URL from "Common/Types/API/URL";
-import { JSONObject } from "Common/Types/JSON";
+import Route from "../../../Types/API/Route";
+import URL from "../../../Types/API/URL";
+import { JSONObject } from "../../../Types/JSON";
 import { ReactElement } from "react";
 
 export interface DetailSideLink {
@@ -15,7 +15,7 @@ export interface DetailSideLink {
 
 export interface FieldBase<T> {
   title?: string;
-  description?: string;
+  description?: string | ReactElement;
   fieldTitleSize?: Size | undefined;
   fieldType?: FieldType;
   dropdownOptions?: Array<DropdownOption> | undefined;

@@ -128,6 +128,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
         fieldType: FormFieldSchemaType.Email,
         required: true,
         placeholder: "subscriber@company.com",
+        disableSpellCheck: true,
       },
       {
         field: {
@@ -259,6 +260,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
             modelType={StatusPageSubscriber}
             id="table-subscriber"
             name="Status Page > Email Subscribers"
+            userPreferencesKey="status-page-subscriber-table"
             isDeleteable={true}
             showViewIdButton={true}
             isCreateable={true}

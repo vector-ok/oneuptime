@@ -16,39 +16,40 @@ import LIMIT_MAX, { LIMIT_PER_PROJECT } from "../../Types/Database/LimitMax";
 import BadDataException from "../../Types/Exception/BadDataException";
 import ObjectID from "../../Types/ObjectID";
 import Typeof from "../../Types/Typeof";
-import Monitor from "Common/Models/DatabaseModels/Monitor";
-import Model from "Common/Models/DatabaseModels/ScheduledMaintenance";
-import ScheduledMaintenanceOwnerTeam from "Common/Models/DatabaseModels/ScheduledMaintenanceOwnerTeam";
-import ScheduledMaintenanceOwnerUser from "Common/Models/DatabaseModels/ScheduledMaintenanceOwnerUser";
-import ScheduledMaintenanceState from "Common/Models/DatabaseModels/ScheduledMaintenanceState";
-import ScheduledMaintenanceStateTimeline from "Common/Models/DatabaseModels/ScheduledMaintenanceStateTimeline";
-import User from "Common/Models/DatabaseModels/User";
+import Monitor from "../../Models/DatabaseModels/Monitor";
+import Model from "../../Models/DatabaseModels/ScheduledMaintenance";
+import ScheduledMaintenanceOwnerTeam from "../../Models/DatabaseModels/ScheduledMaintenanceOwnerTeam";
+import ScheduledMaintenanceOwnerUser from "../../Models/DatabaseModels/ScheduledMaintenanceOwnerUser";
+import ScheduledMaintenanceState from "../../Models/DatabaseModels/ScheduledMaintenanceState";
+import ScheduledMaintenanceStateTimeline from "../../Models/DatabaseModels/ScheduledMaintenanceStateTimeline";
+import User from "../../Models/DatabaseModels/User";
 import Recurring from "../../Types/Events/Recurring";
 import OneUptimeDate from "../../Types/Date";
 import UpdateBy from "../Types/Database/UpdateBy";
-import { FileRoute } from "Common/ServiceRoute";
-import Dictionary from "Common/Types/Dictionary";
-import EmailTemplateType from "Common/Types/Email/EmailTemplateType";
-import SMS from "Common/Types/SMS/SMS";
-import MailService from "Common/Server/Services/MailService";
-import ProjectCallSMSConfigService from "Common/Server/Services/ProjectCallSMSConfigService";
-import ProjectSmtpConfigService from "Common/Server/Services/ProjectSmtpConfigService";
-import SmsService from "Common/Server/Services/SmsService";
-import StatusPageResourceService from "Common/Server/Services/StatusPageResourceService";
-import StatusPageService from "Common/Server/Services/StatusPageService";
-import StatusPageSubscriberService from "Common/Server/Services/StatusPageSubscriberService";
-import QueryHelper from "Common/Server/Types/Database/QueryHelper";
-import Markdown, { MarkdownContentType } from "Common/Server/Types/Markdown";
-import logger from "Common/Server/Utils/Logger";
-import StatusPage from "Common/Models/DatabaseModels/StatusPage";
-import StatusPageResource from "Common/Models/DatabaseModels/StatusPageResource";
-import StatusPageSubscriber from "Common/Models/DatabaseModels/StatusPageSubscriber";
+import { FileRoute } from "../../ServiceRoute";
+import Dictionary from "../../Types/Dictionary";
+import EmailTemplateType from "../../Types/Email/EmailTemplateType";
+import SMS from "../../Types/SMS/SMS";
+import MailService from "../../Server/Services/MailService";
+import ProjectCallSMSConfigService from "../../Server/Services/ProjectCallSMSConfigService";
+import ProjectSmtpConfigService from "../../Server/Services/ProjectSmtpConfigService";
+import SmsService from "../../Server/Services/SmsService";
+import StatusPageResourceService from "../../Server/Services/StatusPageResourceService";
+import StatusPageService from "../../Server/Services/StatusPageService";
+import StatusPageSubscriberService from "../../Server/Services/StatusPageSubscriberService";
+import QueryHelper from "../../Server/Types/Database/QueryHelper";
+import Markdown, { MarkdownContentType } from "../../Server/Types/Markdown";
+import logger from "../../Server/Utils/Logger";
+import StatusPage from "../../Models/DatabaseModels/StatusPage";
+import StatusPageResource from "../../Models/DatabaseModels/StatusPageResource";
+import StatusPageSubscriber from "../../Models/DatabaseModels/StatusPageSubscriber";
 import Hostname from "../../Types/API/Hostname";
 import Protocol from "../../Types/API/Protocol";
 import { IsBillingEnabled } from "../EnvironmentConfig";
 import StatusPageEventType from "../../Types/StatusPage/StatusPageEventType";
 import ScheduledMaintenanceFeedService from "./ScheduledMaintenanceFeedService";
 import { ScheduledMaintenanceFeedEventType } from "../../Models/DatabaseModels/ScheduledMaintenanceFeed";
+import SlackUtil from "../Utils/Workspace/Slack/Slack";
 import { Gray500, Red500 } from "../../Types/BrandColors";
 import Label from "../../Models/DatabaseModels/Label";
 import LabelService from "./LabelService";
@@ -249,6 +250,26 @@ export class Service extends DatabaseService<Model> {
               customTwilioConfig: ProjectCallSMSConfigService.toTwilioConfig(
                 statuspage.callSmsConfig,
               ),
+            }).catch((err: Error) => {
+              logger.error(err);
+            });
+          }
+
+          if (subscriber.slackIncomingWebhookUrl) {
+            const slackMessage: string = `## 🔧 Scheduled Maintenance - ${event.title || ""}
+
+**Scheduled Date:** ${OneUptimeDate.getDateAsFormattedString(event.startsAt!)}
+
+${resourcesAffected ? `**Resources Affected:** ${resourcesAffected}` : ""}
+
+**Description:** ${event.description || ""}
+
+[View Status Page](${statusPageURL}) | [Unsubscribe](${unsubscribeUrl})`;
+
+            // send Slack notification here.
+            SlackUtil.sendMessageToChannelViaIncomingWebhook({
+              url: subscriber.slackIncomingWebhookUrl,
+              text: SlackUtil.convertMarkdownToSlackRichText(slackMessage),
             }).catch((err: Error) => {
               logger.error(err);
             });
@@ -1466,6 +1487,60 @@ ${labels
         return channel.workspaceType === data.workspaceType;
       },
     );
+  }
+
+  /**
+   * Ensures the currentScheduledMaintenanceStateId of the scheduled maintenance matches the latest timeline entry.
+   */
+  public async refreshScheduledMaintenanceCurrentStatus(
+    scheduledMaintenanceId: ObjectID,
+  ): Promise<void> {
+    const scheduledMaintenance: Model | null = await this.findOneById({
+      id: scheduledMaintenanceId,
+      select: {
+        _id: true,
+        projectId: true,
+        currentScheduledMaintenanceStateId: true,
+      },
+      props: { isRoot: true },
+    });
+    if (!scheduledMaintenance || !scheduledMaintenance.projectId) {
+      return;
+    }
+    const latestTimeline: ScheduledMaintenanceStateTimeline | null =
+      await ScheduledMaintenanceStateTimelineService.findOneBy({
+        query: {
+          scheduledMaintenanceId: scheduledMaintenance.id!,
+          projectId: scheduledMaintenance.projectId,
+        },
+        sort: {
+          startsAt: SortOrder.Descending,
+        },
+        select: {
+          scheduledMaintenanceStateId: true,
+        },
+        props: {
+          isRoot: true,
+        },
+      });
+    if (
+      latestTimeline &&
+      latestTimeline.scheduledMaintenanceStateId &&
+      scheduledMaintenance.currentScheduledMaintenanceStateId?.toString() !==
+        latestTimeline.scheduledMaintenanceStateId.toString()
+    ) {
+      await this.updateOneBy({
+        query: { _id: scheduledMaintenance.id!.toString() },
+        data: {
+          currentScheduledMaintenanceStateId:
+            latestTimeline.scheduledMaintenanceStateId,
+        },
+        props: { isRoot: true },
+      });
+      logger.info(
+        `Updated ScheduledMaintenance ${scheduledMaintenance.id} current state to ${latestTimeline.scheduledMaintenanceStateId}`,
+      );
+    }
   }
 }
 export default new Service();

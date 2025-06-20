@@ -33,6 +33,7 @@ import StatusPageEventType from "Common/Types/StatusPage/StatusPageEventType";
 import IncidentFeedService from "Common/Server/Services/IncidentFeedService";
 import { IncidentFeedEventType } from "Common/Models/DatabaseModels/IncidentFeed";
 import { Blue500 } from "Common/Types/BrandColors";
+import SlackUtil from "Common/Server/Utils/Workspace/Slack/Slack";
 
 RunCron(
   "IncidentStateTimeline:SendNotificationToSubscribers",
@@ -97,7 +98,6 @@ RunCron(
         select: {
           _id: true,
           title: true,
-          description: true,
           projectId: true,
           monitors: {
             _id: true,
@@ -285,7 +285,6 @@ RunCron(
                   resourcesAffected: resourcesAffected || "None",
                   incidentSeverity: incident.incidentSeverity?.name || " - ",
                   incidentTitle: incident.title || "",
-                  incidentDescription: incident.description || "",
 
                   incidentState: incidentStateTimeline.incidentState.name,
                   unsubscribeUrl: unsubscribeUrl,
@@ -303,6 +302,31 @@ RunCron(
                 projectId: statuspage.projectId,
               },
             ).catch((err: Error) => {
+              logger.error(err);
+            });
+          }
+
+          if (subscriber.slackIncomingWebhookUrl) {
+            // send slack message here.
+            let slackTitle: string = `🚨 ## Incident - ${incident.title || " - "}
+
+`;
+
+            if (resourcesAffected) {
+              slackTitle += `
+**Resources Affected:** ${resourcesAffected}`;
+            }
+
+            slackTitle += `
+**Severity:** ${incident.incidentSeverity?.name || " - "}
+**Status:** ${incidentStateTimeline.incidentState.name}
+
+[View Status Page](${statusPageURL}) | [Unsubscribe](${unsubscribeUrl})`;
+
+            SlackUtil.sendMessageToChannelViaIncomingWebhook({
+              url: subscriber.slackIncomingWebhookUrl,
+              text: SlackUtil.convertMarkdownToSlackRichText(slackTitle),
+            }).catch((err: Error) => {
               logger.error(err);
             });
           }

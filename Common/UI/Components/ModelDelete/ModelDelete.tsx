@@ -3,10 +3,10 @@ import ModelAPI from "../../Utils/ModelAPI/ModelAPI";
 import { ButtonStyleType } from "../Button/Button";
 import Card from "../Card/Card";
 import ConfirmModal from "../Modal/ConfirmModal";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import { PromiseVoidFunction } from "Common/Types/FunctionTypes";
-import IconProp from "Common/Types/Icon/IconProp";
-import ObjectID from "Common/Types/ObjectID";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import { PromiseVoidFunction } from "../../../Types/FunctionTypes";
+import IconProp from "../../../Types/Icon/IconProp";
+import ObjectID from "../../../Types/ObjectID";
 import React, { ReactElement, useState } from "react";
 
 export interface ComponentProps<TBaseModel extends BaseModel> {
@@ -33,7 +33,7 @@ const ModelDelete: <TBaseModel extends BaseModel>(
         modelType: props.modelType,
         id: props.modelId,
       });
-      props.onDeleteSuccess && props.onDeleteSuccess();
+      props.onDeleteSuccess?.();
     } catch (err) {
       setError(API.getFriendlyMessage(err));
       setShowErrorModal(true);

@@ -16,6 +16,7 @@ import DropdownUtil from "Common/UI/Utils/Dropdown";
 import UptimePrecision from "Common/Types/StatusPage/UptimePrecision";
 import FormValues from "Common/UI/Components/Forms/Types/FormValues";
 import ProjectUtil from "Common/UI/Utils/Project";
+import MarkdownUtil from "Common/UI/Utils/Markdown";
 
 const StatusPageDelete: FunctionComponent<PageComponentProps> = (
   props: PageComponentProps,
@@ -40,6 +41,9 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
             title: "Overview Page Description.",
             fieldType: FormFieldSchemaType.Markdown,
             required: false,
+            description: MarkdownUtil.getMarkdownCheatsheet(
+              "Describe your status page overview here",
+            ),
           },
         ]}
         modelDetailProps={{
@@ -65,6 +69,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
         id={`status-page-history-chart-bar-color-rules`}
         isDeleteable={true}
         name="Status Page > Branding > History Chart Bar Color Rules"
+        userPreferencesKey="status-page-history-chart-bar-color-rules"
         sortBy="order"
         showViewIdButton={true}
         sortOrder={SortOrder.Ascending}

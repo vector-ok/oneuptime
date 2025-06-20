@@ -43,6 +43,7 @@ const SMS: () => JSX.Element = (): ReactElement => {
     <>
       <ModelTable<UserSMS>
         modelType={UserSMS}
+        userPreferencesKey={"user-sms-table"}
         query={{
           projectId: ProjectUtil.getCurrentProjectId()!,
           userId: User.getUserId().toString(),
@@ -134,6 +135,7 @@ const SMS: () => JSX.Element = (): ReactElement => {
             validation: {
               minLength: 2,
             },
+            disableSpellCheck: true,
           },
         ]}
         showRefreshButton={true}

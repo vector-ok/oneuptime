@@ -1,6 +1,5 @@
 import SelectFormFields from "../../Types/SelectEntityField";
 import API from "../../Utils/API/API";
-import Select from "../../Utils/BaseDatabase/Select";
 import ModelAPI, {
   ListResult,
   ModelAPIHttpResponse,
@@ -21,31 +20,32 @@ import Field from "./Types/Field";
 import Fields from "./Types/Fields";
 import { FormStep } from "./Types/FormStep";
 import FormValues from "./Types/FormValues";
-import AnalyticsBaseModel from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
-import AccessControlModel from "Common/Models/DatabaseModels/DatabaseBaseModel/AccessControlModel";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import FileModel from "Common/Models/DatabaseModels/DatabaseBaseModel/FileModel";
-import URL from "Common/Types/API/URL";
-import { ColumnAccessControl } from "Common/Types/BaseDatabase/AccessControl";
-import { Black, VeryLightGray } from "Common/Types/BrandColors";
-import Color from "Common/Types/Color";
-import { getMaxLengthFromTableColumnType } from "Common/Types/Database/ColumnLength";
-import { LIMIT_PER_PROJECT } from "Common/Types/Database/LimitMax";
-import { TableColumnMetadata } from "Common/Types/Database/TableColumn";
-import TableColumnType from "Common/Types/Database/TableColumnType";
-import Dictionary from "Common/Types/Dictionary";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import { PromiseVoidFunction } from "Common/Types/FunctionTypes";
-import GenericObject from "Common/Types/GenericObject";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
+import AnalyticsBaseModel from "../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+import AccessControlModel from "../../../Models/DatabaseModels/DatabaseBaseModel/AccessControlModel";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import FileModel from "../../../Models/DatabaseModels/DatabaseBaseModel/FileModel";
+import URL from "../../../Types/API/URL";
+import { ColumnAccessControl } from "../../../Types/BaseDatabase/AccessControl";
+import { Black, VeryLightGray } from "../../../Types/BrandColors";
+import Color from "../../../Types/Color";
+import { getMaxLengthFromTableColumnType } from "../../../Types/Database/ColumnLength";
+import { LIMIT_PER_PROJECT } from "../../../Types/Database/LimitMax";
+import { TableColumnMetadata } from "../../../Types/Database/TableColumn";
+import TableColumnType from "../../../Types/Database/TableColumnType";
+import Dictionary from "../../../Types/Dictionary";
+import BadDataException from "../../../Types/Exception/BadDataException";
+import { PromiseVoidFunction } from "../../../Types/FunctionTypes";
+import GenericObject from "../../../Types/GenericObject";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
 import Permission, {
   PermissionHelper,
   UserPermission,
-} from "Common/Types/Permission";
-import Typeof from "Common/Types/Typeof";
+} from "../../../Types/Permission";
+import Typeof from "../../../Types/Typeof";
 import React, { MutableRefObject, ReactElement, useState } from "react";
 import useAsyncEffect from "use-async-effect";
+import Select from "../../../Types/BaseDatabase/Select";
 
 export enum FormType {
   Create,
@@ -159,7 +159,7 @@ const ModelForm: <TBaseModel extends BaseModel>(
           (relationSelect as JSONObject)[key] = {
             file: true,
             _id: true,
-            type: true,
+            fileType: true,
             name: true,
           };
         } else if (key && model.isEntityColumn(key)) {
@@ -587,7 +587,7 @@ const ModelForm: <TBaseModel extends BaseModel>(
         await fetchItem();
       } catch (err) {
         setError(API.getFriendlyMessage(err));
-        props.onError && props.onError(API.getFriendlyMessage(err));
+        props.onError?.(API.getFriendlyMessage(err));
       }
 
       setLoading(false);
@@ -773,7 +773,7 @@ const ModelForm: <TBaseModel extends BaseModel>(
           setNewFormValues: (newValues: FormValues<TBaseModel>) => void,
         ) => {
           if (!isLoading) {
-            props.onChange && props.onChange(values, setNewFormValues);
+            props.onChange?.(values, setNewFormValues);
           }
         }}
         showAsColumns={props.showAsColumns}

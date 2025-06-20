@@ -8,9 +8,9 @@ import {
 } from "../Utils/Express";
 import Response from "../Utils/Response";
 import BaseAPI from "./BaseAPI";
-import NotFoundException from "Common/Types/Exception/NotFoundException";
-import ObjectID from "Common/Types/ObjectID";
-import File from "Common/Models/DatabaseModels/File";
+import NotFoundException from "../../Types/Exception/NotFoundException";
+import ObjectID from "../../Types/ObjectID";
+import File from "../../Models/DatabaseModels/File";
 
 export default class FileAPI extends BaseAPI<File, FileServiceType> {
   public constructor() {
@@ -31,11 +31,11 @@ export default class FileAPI extends BaseAPI<File, FileServiceType> {
           },
           select: {
             file: true,
-            type: true,
+            fileType: true,
           },
         });
 
-        if (!file || !file.file || !file.type) {
+        if (!file || !file.file || !file.fileType) {
           return Response.sendErrorResponse(
             req,
             res,

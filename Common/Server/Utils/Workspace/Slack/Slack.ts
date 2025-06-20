@@ -1,8 +1,8 @@
-import HTTPErrorResponse from "Common/Types/API/HTTPErrorResponse";
-import HTTPResponse from "Common/Types/API/HTTPResponse";
-import URL from "Common/Types/API/URL";
-import { JSONObject } from "Common/Types/JSON";
-import API from "Common/Utils/API";
+import HTTPErrorResponse from "../../../../Types/API/HTTPErrorResponse";
+import HTTPResponse from "../../../../Types/API/HTTPResponse";
+import URL from "../../../../Types/API/URL";
+import { JSONObject } from "../../../../Types/JSON";
+import API from "../../../../Utils/API";
 import WorkspaceMessagePayload, {
   WorkspaceCheckboxBlock,
   WorkspaceDateTimePickerBlock,
@@ -33,6 +33,15 @@ import CaptureSpan from "../../Telemetry/CaptureSpan";
 import BadDataException from "../../../../Types/Exception/BadDataException";
 
 export default class SlackUtil extends WorkspaceBase {
+  public static isValidSlackIncomingWebhookUrl(
+    incomingWebhookUrl: URL,
+  ): boolean {
+    // check if the URL starts with https://hooks.slack.com/services/
+    return incomingWebhookUrl
+      .toString()
+      .startsWith("https://hooks.slack.com/services/");
+  }
+
   @CaptureSpan()
   public static override async getUsernameFromUserId(data: {
     authToken: string;
@@ -50,6 +59,10 @@ export default class SlackUtil extends WorkspaceBase {
         {
           Authorization: `Bearer ${data.authToken}`,
           ["Content-Type"]: "application/x-www-form-urlencoded",
+        },
+        {
+          retries: 3,
+          exponentialBackoff: true,
         },
       );
 
@@ -112,6 +125,10 @@ export default class SlackUtil extends WorkspaceBase {
       {
         Authorization: `Bearer ${data.authToken}`,
         ["Content-Type"]: "application/json",
+      },
+      {
+        retries: 3,
+        exponentialBackoff: true,
       },
     );
 
@@ -193,6 +210,10 @@ export default class SlackUtil extends WorkspaceBase {
             Authorization: `Bearer ${data.authToken}`,
             ["Content-Type"]: "application/x-www-form-urlencoded",
           },
+          {
+            retries: 3,
+            exponentialBackoff: true,
+          },
         );
 
       logger.debug("Response from Slack API for archiving channel:");
@@ -235,6 +256,10 @@ export default class SlackUtil extends WorkspaceBase {
         {
           Authorization: `Bearer ${data.authToken}`,
           ["Content-Type"]: "application/x-www-form-urlencoded",
+        },
+        {
+          retries: 3,
+          exponentialBackoff: true,
         },
       );
 
@@ -291,6 +316,10 @@ export default class SlackUtil extends WorkspaceBase {
         {
           Authorization: `Bearer ${data.authToken}`,
           ["Content-Type"]: "application/x-www-form-urlencoded",
+        },
+        {
+          retries: 3,
+          exponentialBackoff: true,
         },
       );
 
@@ -440,6 +469,10 @@ export default class SlackUtil extends WorkspaceBase {
           Authorization: `Bearer ${data.authToken}`,
           ["Content-Type"]: "application/x-www-form-urlencoded",
         },
+        {
+          retries: 3,
+          exponentialBackoff: true,
+        },
       );
 
     logger.debug("Response from Slack API for getting channel info:");
@@ -509,6 +542,10 @@ export default class SlackUtil extends WorkspaceBase {
           {
             Authorization: `Bearer ${data.authToken}`,
             ["Content-Type"]: "application/x-www-form-urlencoded",
+          },
+          {
+            retries: 3,
+            exponentialBackoff: true,
           },
         );
 
@@ -770,6 +807,10 @@ export default class SlackUtil extends WorkspaceBase {
           Authorization: `Bearer ${data.authToken}`,
           ["Content-Type"]: "application/json",
         },
+        {
+          retries: 3,
+          exponentialBackoff: true,
+        },
       );
 
     logger.debug("Response from Slack API for sending message:");
@@ -843,6 +884,10 @@ export default class SlackUtil extends WorkspaceBase {
         {
           Authorization: `Bearer ${data.authToken}`,
           ["Content-Type"]: "application/x-www-form-urlencoded",
+        },
+        {
+          retries: 3,
+          exponentialBackoff: true,
         },
       );
 
@@ -1224,6 +1269,10 @@ export default class SlackUtil extends WorkspaceBase {
           Authorization: `Bearer ${data.authToken}`,
           ["Content-Type"]: "application/x-www-form-urlencoded",
         },
+        {
+          retries: 3,
+          exponentialBackoff: true,
+        },
       );
 
     if (response instanceof HTTPErrorResponse) {
@@ -1287,6 +1336,10 @@ export default class SlackUtil extends WorkspaceBase {
           {
             Authorization: `Bearer ${data.authToken}`,
             ["Content-Type"]: "application/x-www-form-urlencoded",
+          },
+          {
+            retries: 3,
+            exponentialBackoff: true,
           },
         );
 
@@ -1364,20 +1417,33 @@ export default class SlackUtil extends WorkspaceBase {
     logger.debug(data);
 
     const apiResult: HTTPResponse<JSONObject> | HTTPErrorResponse | null =
-      await API.post(data.url, {
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `${data.text}`,
+      await API.post(
+        data.url,
+        {
+          blocks: [
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: `${data.text}`,
+              },
             },
-          },
-        ],
-      });
+          ],
+        },
+        undefined,
+        {
+          retries: 3,
+          exponentialBackoff: true,
+        },
+      );
 
     logger.debug("Response from Slack API for sending message via webhook:");
     logger.debug(apiResult);
     return apiResult;
+  }
+
+  @CaptureSpan()
+  public static convertMarkdownToSlackRichText(markdown: string): string {
+    return SlackifyMarkdown(markdown);
   }
 }

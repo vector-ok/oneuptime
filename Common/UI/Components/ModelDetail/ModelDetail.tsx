@@ -1,5 +1,4 @@
 import API from "../../Utils/API/API";
-import Select from "../../Utils/BaseDatabase/Select";
 import ModelAPI from "../../Utils/ModelAPI/ModelAPI";
 import PermissionUtil from "../../Utils/Permission";
 import User from "../../Utils/User";
@@ -8,16 +7,20 @@ import DetailField from "../Detail/Field";
 import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import Loader, { LoaderType } from "../Loader/Loader";
 import Field from "./Field";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import { ColumnAccessControl } from "Common/Types/BaseDatabase/AccessControl";
-import { VeryLightGray } from "Common/Types/BrandColors";
-import Dictionary from "Common/Types/Dictionary";
-import { PromiseVoidFunction, VoidFunction } from "Common/Types/FunctionTypes";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
-import Permission, { PermissionHelper } from "Common/Types/Permission";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import { ColumnAccessControl } from "../../../Types/BaseDatabase/AccessControl";
+import { VeryLightGray } from "../../../Types/BrandColors";
+import Dictionary from "../../../Types/Dictionary";
+import {
+  PromiseVoidFunction,
+  VoidFunction,
+} from "../../../Types/FunctionTypes";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
+import Permission, { PermissionHelper } from "../../../Types/Permission";
 import React, { ReactElement, useEffect, useState } from "react";
 import { useAsyncEffect } from "use-async-effect";
+import Select from "../../../Types/BaseDatabase/Select";
 
 export interface ComponentProps<TBaseModel extends BaseModel> {
   modelType: { new (): TBaseModel };
@@ -91,7 +94,7 @@ const ModelDetail: <TBaseModel extends BaseModel>(
           (relationSelect as JSONObject)[key] = {
             file: true,
             _id: true,
-            type: true,
+            fileType: true,
             name: true,
           };
         } else if (key && new props.modelType()?.isEntityColumn(key)) {
@@ -168,7 +171,7 @@ const ModelDetail: <TBaseModel extends BaseModel>(
   const fetchItem: PromiseVoidFunction = async (): Promise<void> => {
     // get item.
     setIsLoading(true);
-    props.onLoadingChange && props.onLoadingChange(true);
+    props.onLoadingChange?.(true);
     setError("");
     try {
       if (props.onBeforeFetch) {
@@ -202,10 +205,10 @@ const ModelDetail: <TBaseModel extends BaseModel>(
       setItem(item);
     } catch (err) {
       setError(API.getFriendlyMessage(err));
-      props.onError && props.onError(API.getFriendlyMessage(err));
+      props.onError?.(API.getFriendlyMessage(err));
     }
     setIsLoading(false);
-    props.onLoadingChange && props.onLoadingChange(false);
+    props.onLoadingChange?.(false);
   };
 
   useAsyncEffect(async () => {

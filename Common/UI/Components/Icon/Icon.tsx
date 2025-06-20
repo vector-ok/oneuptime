@@ -1,5 +1,5 @@
-import Color from "Common/Types/Color";
-import IconProp from "Common/Types/Icon/IconProp";
+import Color from "../../../Types/Color";
+import IconProp from "../../../Types/Icon/IconProp";
 import React, { FunctionComponent, ReactElement } from "react";
 
 export enum SizeProp {
@@ -116,7 +116,9 @@ const Icon: FunctionComponent<ComponentProps> = ({
       <div role="icon">
         <svg
           onClick={() => {
-            onClick && onClick();
+            if (onClick) {
+              onClick();
+            }
           }}
           className={`${textColor} ${sizeClassName} ${strokeWidth} ${className}`}
           style={color ? { color: color.toString(), ...style } : { ...style }}

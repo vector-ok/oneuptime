@@ -114,6 +114,7 @@ export const DashboardsRoutePath: Dictionary<string> = {
 
 export const StatusPagesRoutePath: Dictionary<string> = {
   [PageMap.STATUS_PAGE_ANNOUNCEMENTS]: "announcements",
+  [PageMap.ANNOUNCEMENT_CREATE]: "announcements/create",
   [PageMap.STATUS_PAGE_VIEW]: `${RouteParams.ModelID}`,
   [PageMap.STATUS_PAGE_VIEW_BRANDING]: `${RouteParams.ModelID}/branding`,
   [PageMap.STATUS_PAGE_VIEW_OWNERS]: `${RouteParams.ModelID}/owners`,
@@ -123,6 +124,7 @@ export const StatusPagesRoutePath: Dictionary<string> = {
   [PageMap.STATUS_PAGE_VIEW_DOMAINS]: `${RouteParams.ModelID}/domains`,
   [PageMap.STATUS_PAGE_VIEW_EMAIL_SUBSCRIBERS]: `${RouteParams.ModelID}/email-subscribers`,
   [PageMap.STATUS_PAGE_VIEW_SMS_SUBSCRIBERS]: `${RouteParams.ModelID}/sms-subscribers`,
+  [PageMap.STATUS_PAGE_VIEW_SLACK_SUBSCRIBERS]: `${RouteParams.ModelID}/slack-subscribers`,
   [PageMap.STATUS_PAGE_VIEW_WEBHOOK_SUBSCRIBERS]: `${RouteParams.ModelID}/webhook-subscribers`,
   [PageMap.STATUS_PAGE_VIEW_HEADER_STYLE]: `${RouteParams.ModelID}/header-style`,
   [PageMap.STATUS_PAGE_VIEW_FOOTER_STYLE]: `${RouteParams.ModelID}/footer-style`,
@@ -220,6 +222,10 @@ export const SettingsRoutePath: Dictionary<string> = {
   [PageMap.SETTINGS_INCIDENT_NOTE_TEMPLATES]: "incident-note-templates",
   [PageMap.SETTINGS_INCIDENT_NOTE_TEMPLATES_VIEW]: `incident-note-templates/${RouteParams.ModelID}`,
 
+  [PageMap.SETTINGS_STATUS_PAGE_ANNOUNCEMENT_TEMPLATES]:
+    "status-page-announcement-templates",
+  [PageMap.SETTINGS_STATUS_PAGE_ANNOUNCEMENT_TEMPLATES_VIEW]: `status-page-announcement-templates/${RouteParams.ModelID}`,
+
   [PageMap.SETTINGS_ALERT_CUSTOM_FIELDS]: "alert-custom-fields",
   [PageMap.SETTINGS_ALERTS_STATE]: "alerts-state",
   [PageMap.SETTINGS_ALERTS_SEVERITY]: "alerts-severity",
@@ -271,6 +277,7 @@ export const OnCallDutyRoutePath: Dictionary<string> = {
   [PageMap.ON_CALL_DUTY_POLICY_VIEW_OWNERS]: `policies/${RouteParams.ModelID}/owners`,
   [PageMap.ON_CALL_DUTY_POLICY_VIEW_ESCALATION]: `policies/${RouteParams.ModelID}/escalation`,
   [PageMap.ON_CALL_DUTY_EXECUTION_LOGS]: "execution-logs",
+  [PageMap.ON_CALLDUTY_USER_TIME_LOGS]: "user-time-logs",
   [PageMap.ON_CALL_DUTY_POLICY_USER_OVERRIDES]: "user-overrides",
   [PageMap.ON_CALL_DUTY_POLICY_VIEW_USER_OVERRIDES]: `policies/${RouteParams.ModelID}/user-overrides`,
   [PageMap.ON_CALL_DUTY_EXECUTION_LOGS_TIMELINE]: `execution-logs/${RouteParams.ModelID}`,
@@ -950,6 +957,12 @@ const RouteMap: Dictionary<Route> = {
     }`,
   ),
 
+  [PageMap.ANNOUNCEMENT_CREATE]: new Route(
+    `/dashboard/${RouteParams.ProjectID}/status-pages/${
+      StatusPagesRoutePath[PageMap.ANNOUNCEMENT_CREATE]
+    }`,
+  ),
+
   [PageMap.STATUS_PAGE_VIEW]: new Route(
     `/dashboard/${RouteParams.ProjectID}/status-pages/${
       StatusPagesRoutePath[PageMap.STATUS_PAGE_VIEW]
@@ -1007,6 +1020,12 @@ const RouteMap: Dictionary<Route> = {
   [PageMap.STATUS_PAGE_VIEW_SMS_SUBSCRIBERS]: new Route(
     `/dashboard/${RouteParams.ProjectID}/status-pages/${
       StatusPagesRoutePath[PageMap.STATUS_PAGE_VIEW_SMS_SUBSCRIBERS]
+    }`,
+  ),
+
+  [PageMap.STATUS_PAGE_VIEW_SLACK_SUBSCRIBERS]: new Route(
+    `/dashboard/${RouteParams.ProjectID}/status-pages/${
+      StatusPagesRoutePath[PageMap.STATUS_PAGE_VIEW_SLACK_SUBSCRIBERS]
     }`,
   ),
 
@@ -1145,6 +1164,12 @@ const RouteMap: Dictionary<Route> = {
   [PageMap.ON_CALL_DUTY_EXECUTION_LOGS]: new Route(
     `/dashboard/${RouteParams.ProjectID}/on-call-duty/${
       OnCallDutyRoutePath[PageMap.ON_CALL_DUTY_EXECUTION_LOGS]
+    }`,
+  ),
+
+  [PageMap.ON_CALLDUTY_USER_TIME_LOGS]: new Route(
+    `/dashboard/${RouteParams.ProjectID}/on-call-duty/${
+      OnCallDutyRoutePath[PageMap.ON_CALLDUTY_USER_TIME_LOGS]
     }`,
   ),
 
@@ -1551,6 +1576,20 @@ const RouteMap: Dictionary<Route> = {
   [PageMap.SETTINGS_INCIDENT_CUSTOM_FIELDS]: new Route(
     `/dashboard/${RouteParams.ProjectID}/settings/${
       SettingsRoutePath[PageMap.SETTINGS_INCIDENT_CUSTOM_FIELDS]
+    }`,
+  ),
+
+  [PageMap.SETTINGS_STATUS_PAGE_ANNOUNCEMENT_TEMPLATES]: new Route(
+    `/dashboard/${RouteParams.ProjectID}/settings/${
+      SettingsRoutePath[PageMap.SETTINGS_STATUS_PAGE_ANNOUNCEMENT_TEMPLATES]
+    }`,
+  ),
+
+  [PageMap.SETTINGS_STATUS_PAGE_ANNOUNCEMENT_TEMPLATES_VIEW]: new Route(
+    `/dashboard/${RouteParams.ProjectID}/settings/${
+      SettingsRoutePath[
+        PageMap.SETTINGS_STATUS_PAGE_ANNOUNCEMENT_TEMPLATES_VIEW
+      ]
     }`,
   ),
 

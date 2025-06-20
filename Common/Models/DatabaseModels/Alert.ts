@@ -217,7 +217,7 @@ export default class Alert extends BaseModel {
     type: TableColumnType.Markdown,
     title: "Description",
     description:
-      "Short description of this alert. This is in markdown and will be visible on the status page.",
+      "Short description of this alert. This will be visible on the status page. This is in markdown.",
   })
   @Column({
     nullable: true,

@@ -21,12 +21,12 @@ import ObjectID from "../../Types/ObjectID";
 import PositiveNumber from "../../Types/PositiveNumber";
 import Typeof from "../../Types/Typeof";
 import UserNotificationEventType from "../../Types/UserNotification/UserNotificationEventType";
-import Model from "Common/Models/DatabaseModels/Alert";
-import AlertOwnerTeam from "Common/Models/DatabaseModels/AlertOwnerTeam";
-import AlertOwnerUser from "Common/Models/DatabaseModels/AlertOwnerUser";
-import AlertState from "Common/Models/DatabaseModels/AlertState";
-import AlertStateTimeline from "Common/Models/DatabaseModels/AlertStateTimeline";
-import User from "Common/Models/DatabaseModels/User";
+import Model from "../../Models/DatabaseModels/Alert";
+import AlertOwnerTeam from "../../Models/DatabaseModels/AlertOwnerTeam";
+import AlertOwnerUser from "../../Models/DatabaseModels/AlertOwnerUser";
+import AlertState from "../../Models/DatabaseModels/AlertState";
+import AlertStateTimeline from "../../Models/DatabaseModels/AlertStateTimeline";
+import User from "../../Models/DatabaseModels/User";
 import { IsBillingEnabled } from "../EnvironmentConfig";
 import TelemetryType from "../../Types/Telemetry/TelemetryType";
 import logger from "../Utils/Logger";
@@ -1337,6 +1337,57 @@ ${alertSeverity.name}
     // store alert metric
 
     return alert;
+  }
+
+  /**
+   * Ensures the currentAlertStateId of the alert matches the latest timeline entry.
+   */
+  public async refreshAlertCurrentStatus(alertId: ObjectID): Promise<void> {
+    const alert: Model | null = await this.findOneById({
+      id: alertId,
+      select: {
+        _id: true,
+        projectId: true,
+        currentAlertStateId: true,
+      },
+      props: { isRoot: true },
+    });
+    if (!alert || !alert.projectId) {
+      return;
+    }
+    const latestTimeline: AlertStateTimeline | null =
+      await AlertStateTimelineService.findOneBy({
+        query: {
+          alertId: alert.id!,
+          projectId: alert.projectId,
+        },
+        sort: {
+          startsAt: SortOrder.Descending,
+        },
+        select: {
+          alertStateId: true,
+        },
+        props: {
+          isRoot: true,
+        },
+      });
+    if (
+      latestTimeline &&
+      latestTimeline.alertStateId &&
+      alert.currentAlertStateId?.toString() !==
+        latestTimeline.alertStateId.toString()
+    ) {
+      await this.updateOneBy({
+        query: { _id: alert.id!.toString() },
+        data: {
+          currentAlertStateId: latestTimeline.alertStateId,
+        },
+        props: { isRoot: true },
+      });
+      logger.info(
+        `Updated Alert ${alert.id} current state to ${latestTimeline.alertStateId}`,
+      );
+    }
   }
 }
 export default new Service();

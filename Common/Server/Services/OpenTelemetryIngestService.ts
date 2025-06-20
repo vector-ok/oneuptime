@@ -1,18 +1,18 @@
-import OneUptimeDate from "Common/Types/Date";
-import { JSONArray, JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
+import OneUptimeDate from "../../Types/Date";
+import { JSONArray, JSONObject } from "../../Types/JSON";
+import ObjectID from "../../Types/ObjectID";
 import Metric, {
   AggregationTemporality,
-} from "Common/Models/AnalyticsModels/Metric";
-import Dictionary from "Common/Types/Dictionary";
-import ProductType from "Common/Types/MeteredPlan/ProductType";
-import { IsBillingEnabled } from "Common/Server/EnvironmentConfig";
-import TelemetryUsageBillingService from "Common/Server/Services/TelemetryUsageBillingService";
-import logger from "Common/Server/Utils/Logger";
-import TelemetryService from "Common/Models/DatabaseModels/TelemetryService";
-import TelemetryServiceService from "Common/Server/Services/TelemetryServiceService";
-import { DEFAULT_RETENTION_IN_DAYS } from "Common/Models/DatabaseModels/TelemetryUsageBilling";
-import TelemetryUtil from "Common/Server/Utils/Telemetry/Telemetry";
+} from "../../Models/AnalyticsModels/Metric";
+import Dictionary from "../../Types/Dictionary";
+import ProductType from "../../Types/MeteredPlan/ProductType";
+import { IsBillingEnabled } from "../../Server/EnvironmentConfig";
+import TelemetryUsageBillingService from "../../Server/Services/TelemetryUsageBillingService";
+import logger from "../../Server/Utils/Logger";
+import TelemetryService from "../../Models/DatabaseModels/TelemetryService";
+import TelemetryServiceService from "../../Server/Services/TelemetryServiceService";
+import { DEFAULT_RETENTION_IN_DAYS } from "../../Models/DatabaseModels/TelemetryUsageBilling";
+import TelemetryUtil from "../../Server/Utils/Telemetry/Telemetry";
 import CaptureSpan from "../Utils/Telemetry/CaptureSpan";
 
 export enum OtelAggregationTemporality {
@@ -128,15 +128,19 @@ export default class OTelIngestService {
       Metric,
     ) as Metric;
 
-    newDbMetric.startTimeUnixNano = datapoint["startTimeUnixNano"] as number;
-    newDbMetric.startTime = OneUptimeDate.fromUnixNano(
-      datapoint["startTimeUnixNano"] as number,
-    );
+    if (datapoint["startTimeUnixNano"]) {
+      newDbMetric.startTimeUnixNano = datapoint["startTimeUnixNano"] as number;
+      newDbMetric.startTime = OneUptimeDate.fromUnixNano(
+        datapoint["startTimeUnixNano"] as number,
+      );
+    }
 
-    newDbMetric.timeUnixNano = datapoint["timeUnixNano"] as number;
-    newDbMetric.time = OneUptimeDate.fromUnixNano(
-      datapoint["timeUnixNano"] as number,
-    );
+    if (datapoint["timeUnixNano"]) {
+      newDbMetric.timeUnixNano = datapoint["timeUnixNano"] as number;
+      newDbMetric.time = OneUptimeDate.fromUnixNano(
+        datapoint["timeUnixNano"] as number,
+      );
+    }
 
     if (Object.keys(datapoint).includes("asInt")) {
       newDbMetric.value = datapoint["asInt"] as number;

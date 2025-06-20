@@ -39,6 +39,7 @@ const MonitorSecrets: FunctionComponent<
         link={URL.fromString("https://www.youtube.com/watch?v=V5eIpd_IPlU")}
       />
       <ModelTable<MonitorSecret>
+        userPreferencesKey={"monitor-secrets-table"}
         modelType={MonitorSecret}
         query={{
           projectId: ProjectUtil.getCurrentProjectId()!,
@@ -93,6 +94,7 @@ const MonitorSecrets: FunctionComponent<
               noNumbers: true,
               noSpecialCharacters: true,
             },
+            disableSpellCheck: true,
           },
           {
             field: {
@@ -170,7 +172,7 @@ const MonitorSecrets: FunctionComponent<
               description: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
           {
             field: {
@@ -211,7 +213,7 @@ const MonitorSecrets: FunctionComponent<
               });
 
               setCurrentlyEditingItem(null);
-            } catch (err) {
+            } catch {
               // do nothing
             }
 

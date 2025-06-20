@@ -1,6 +1,6 @@
 import Icon, { ThickProp } from "../Icon/Icon";
 import MarkdownViewer from "../Markdown.tsx/LazyMarkdownViewer";
-import IconProp from "Common/Types/Icon/IconProp";
+import IconProp from "../../../Types/Icon/IconProp";
 import React, {
   FunctionComponent,
   ReactElement,
@@ -41,14 +41,16 @@ const Accordion: FunctionComponent<ComponentProps> = (
   }, [props.title]);
 
   useEffect(() => {
-    props.onClick && props.onClick();
-
-    if (isOpen) {
-      props.onOpen && props.onOpen();
+    if (props.onClick) {
+      props.onClick();
     }
 
-    if (!isOpen) {
-      props.onClose && props.onClose();
+    if (isOpen && props.onOpen) {
+      props.onOpen();
+    }
+
+    if (!isOpen && props.onClose) {
+      props.onClose();
     }
   }, [isOpen]);
 

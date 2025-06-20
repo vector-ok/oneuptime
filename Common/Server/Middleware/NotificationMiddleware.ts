@@ -6,9 +6,10 @@ import {
 } from "../Utils/Express";
 import JSONWebToken from "../Utils/JsonWebToken";
 import Response from "../Utils/Response";
-import { OnCallInputRequest } from "Common/Types/Call/CallRequest";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import JSONFunctions from "Common/Types/JSONFunctions";
+import logger from "../Utils/Logger";
+import { OnCallInputRequest } from "../../Types/Call/CallRequest";
+import BadDataException from "../../Types/Exception/BadDataException";
+import JSONFunctions from "../../Types/JSONFunctions";
 import VoiceResponse from "twilio/lib/twiml/VoiceResponse";
 import CaptureSpan from "../Utils/Telemetry/CaptureSpan";
 
@@ -61,6 +62,7 @@ export default class NotificationMiddleware {
         JSONWebToken.decodeJsonPayload(token),
       );
     } catch (e) {
+      logger.error(e);
       return Response.sendErrorResponse(
         req,
         res,

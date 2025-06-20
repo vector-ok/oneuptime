@@ -70,6 +70,7 @@ const Home: FunctionComponent<PageComponentProps> = (): ReactElement => {
           modelType={UserTwoFactorAuth}
           name="Two Factor Authentication"
           id="two-factor-auth-table"
+          userPreferencesKey="user-two-factor-auth-table"
           isDeleteable={true}
           refreshToggle={tableRefreshToggle}
           filters={[]}
@@ -155,7 +156,9 @@ const Home: FunctionComponent<PageComponentProps> = (): ReactElement => {
                     props: CustomElementProps,
                   ) => {
                     if (value && !value["qr"]) {
-                      props?.onChange && props.onChange("code"); // set temporary value to trigger validation. This is a hack to make the form valid.
+                      if (props?.onChange) {
+                        props.onChange("code"); // set temporary value to trigger validation. This is a hack to make the form valid.
+                      }
                     }
                     return (
                       <QRCodeElement

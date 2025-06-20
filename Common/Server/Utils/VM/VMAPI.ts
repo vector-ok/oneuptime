@@ -1,13 +1,14 @@
 import { IsolatedVMHostname } from "../../../Server/EnvironmentConfig";
 import ClusterKeyAuthorization from "../../Middleware/ClusterKeyAuthorization";
-import HTTPErrorResponse from "Common/Types/API/HTTPErrorResponse";
-import HTTPResponse from "Common/Types/API/HTTPResponse";
-import Protocol from "Common/Types/API/Protocol";
-import Route from "Common/Types/API/Route";
-import URL from "Common/Types/API/URL";
-import ReturnResult from "Common/Types/IsolatedVM/ReturnResult";
-import { JSONObject, JSONValue } from "Common/Types/JSON";
-import API from "Common/Utils/API";
+import HTTPErrorResponse from "../../../Types/API/HTTPErrorResponse";
+import HTTPResponse from "../../../Types/API/HTTPResponse";
+import Protocol from "../../../Types/API/Protocol";
+import Route from "../../../Types/API/Route";
+import URL from "../../../Types/API/URL";
+import ReturnResult from "../../../Types/IsolatedVM/ReturnResult";
+import { JSONObject, JSONValue } from "../../../Types/JSON";
+import API from "../../../Utils/API";
+import logger from "../Logger";
 import CaptureSpan from "../Telemetry/CaptureSpan";
 
 export default class VMUtil {
@@ -57,6 +58,7 @@ export default class VMUtil {
         valueToReplaceInPlace = JSON.stringify(valueToReplaceInPlace);
         didStringify = true;
       } catch (err) {
+        logger.error(err);
         return valueToReplaceInPlace;
       }
     }
@@ -104,6 +106,7 @@ export default class VMUtil {
       try {
         valueToReplaceInPlace = JSON.parse(valueToReplaceInPlace);
       } catch (err) {
+        logger.error(err);
         return valueToReplaceInPlace;
       }
     }

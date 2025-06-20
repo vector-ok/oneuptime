@@ -10,6 +10,7 @@ export interface ComponentProps {
   isPreviewStatusPage: boolean;
   enableEmailSubscribers: boolean;
   enableSMSSubscribers: boolean;
+  enableSlackSubscribers: boolean;
 }
 
 const SubscribeSideMenu: FunctionComponent<ComponentProps> = (
@@ -43,6 +44,21 @@ const SubscribeSideMenu: FunctionComponent<ComponentProps> = (
             ),
           }}
           icon={IconProp.SMS}
+        />
+      ) : (
+        <></>
+      )}
+      {props.enableSlackSubscribers ? (
+        <SideMenuItem
+          link={{
+            title: "Slack",
+            to: RouteUtil.populateRouteParams(
+              props.isPreviewStatusPage
+                ? (RouteMap[PageMap.PREVIEW_SUBSCRIBE_SLACK] as Route)
+                : (RouteMap[PageMap.SUBSCRIBE_SLACK] as Route),
+            ),
+          }}
+          icon={IconProp.Slack}
         />
       ) : (
         <></>

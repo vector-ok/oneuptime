@@ -8,9 +8,9 @@ import ModelForm, {
 } from "../Forms/ModelForm";
 import FormValues from "../Forms/Types/FormValues";
 import Modal, { ModalWidth } from "../Modal/Modal";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import { JSONObject } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import { JSONObject } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
 import React, { MutableRefObject, ReactElement, useRef, useState } from "react";
 
 export interface ComponentProps<TBaseModel extends BaseModel> {
@@ -95,10 +95,11 @@ const ModelFormModal: <TBaseModel extends BaseModel>(
             }}
             initialValues={props.initialValues}
             onSuccess={(data: TBaseModel) => {
-              props.onSuccess &&
+              if (props.onSuccess) {
                 props.onSuccess(
                   BaseModel.fromJSONObject(data as TBaseModel, props.modelType),
                 );
+              }
             }}
             onError={(error: string) => {
               setError(error);

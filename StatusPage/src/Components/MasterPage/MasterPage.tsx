@@ -45,6 +45,7 @@ export interface ComponentProps {
   isPrivateStatusPage: boolean;
   enableEmailSubscribers: boolean;
   enableSMSSubscribers: boolean;
+  enableSlackSubscribers?: boolean;
 }
 
 const DashboardMasterPage: FunctionComponent<ComponentProps> = (
@@ -240,7 +241,8 @@ const DashboardMasterPage: FunctionComponent<ComponentProps> = (
     Navigation.getCurrentRoute().toString().includes("login") ||
     Navigation.getCurrentRoute().toString().includes("forgot-password") ||
     Navigation.getCurrentRoute().toString().includes("reset-password") ||
-    Navigation.getCurrentRoute().toString().includes("sso")
+    Navigation.getCurrentRoute().toString().includes("sso") ||
+    Navigation.getCurrentRoute().toString().includes("forbidden")
   ) {
     return <>{props.children}</>;
   }
@@ -309,6 +311,7 @@ const DashboardMasterPage: FunctionComponent<ComponentProps> = (
             isPreview={props.isPreview}
             enableEmailSubscribers={props.enableEmailSubscribers}
             enableSMSSubscribers={props.enableSMSSubscribers}
+            enableSlackSubscribers={props.enableSlackSubscribers || false}
             showIncidentsOnStatusPage={
               statusPage?.showIncidentsOnStatusPage || false
             }

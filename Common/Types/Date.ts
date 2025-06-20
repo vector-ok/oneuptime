@@ -5,11 +5,47 @@ import { JSONObject, ObjectType } from "./JSON";
 import PositiveNumber from "./PositiveNumber";
 import moment from "moment-timezone";
 import Timezone from "./Timezone";
+import Zod, { ZodSchema } from "../Utils/Schema/Zod";
 
 export const Moment: typeof moment = moment;
 
 export default class OneUptimeDate {
   // get date time from unix timestamp
+
+  public static getSchema(): ZodSchema {
+    return Zod.object({
+      _type: Zod.literal(ObjectType.DateTime),
+      value: Zod.string().openapi({
+        type: "string",
+        example: "2023-10-01T12:00:00Z",
+      }),
+    }).openapi({
+      type: "object",
+      description: "A date time object.",
+      example: {
+        _type: ObjectType.DateTime,
+        value: "2023-10-01T12:00:00Z",
+      },
+    });
+  }
+
+  public static getHoursAndMinutesFromMinutes(minutes: number): string {
+    const hours: number = Math.floor(minutes / 60);
+    const mins: number = minutes % 60;
+
+    let formattedString: string = "";
+
+    if (hours > 0) {
+      formattedString += hours + " hours ";
+    }
+
+    if (mins > 0) {
+      formattedString += mins + " minutes";
+    }
+
+    return formattedString.trim() || "0 minutes";
+  }
+
   public static fromUnixTimestamp(timestamp: number): Date {
     return new Date(timestamp * 1000);
   }

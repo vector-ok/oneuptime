@@ -1,6 +1,5 @@
 import API from "../../Utils/API/API";
 import Query from "../../../Types/BaseDatabase/Query";
-import Select from "../../Utils/BaseDatabase/Select";
 import ModelAPI, {
   ListResult,
   RequestOptions,
@@ -9,16 +8,17 @@ import ComponentLoader from "../ComponentLoader/ComponentLoader";
 import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import Input from "../Input/Input";
 import StaticModelList from "../ModelList/StaticModelList";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import HTTPResponse from "Common/Types/API/HTTPResponse";
-import URL from "Common/Types/API/URL";
-import SortOrder from "Common/Types/BaseDatabase/SortOrder";
-import { LIMIT_PER_PROJECT } from "Common/Types/Database/LimitMax";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import { PromiseVoidFunction } from "Common/Types/FunctionTypes";
-import { JSONArray } from "Common/Types/JSON";
-import ObjectID from "Common/Types/ObjectID";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import HTTPResponse from "../../../Types/API/HTTPResponse";
+import URL from "../../../Types/API/URL";
+import SortOrder from "../../../Types/BaseDatabase/SortOrder";
+import { LIMIT_PER_PROJECT } from "../../../Types/Database/LimitMax";
+import BadDataException from "../../../Types/Exception/BadDataException";
+import { PromiseVoidFunction } from "../../../Types/FunctionTypes";
+import { JSONArray } from "../../../Types/JSON";
+import ObjectID from "../../../Types/ObjectID";
 import React, { ReactElement, useEffect, useState } from "react";
+import Select from "../../../Types/BaseDatabase/Select";
 
 export interface ComponentProps<TBaseModel extends BaseModel> {
   id: string;
@@ -59,7 +59,7 @@ const ModelList: <TBaseModel extends BaseModel>(
   const [searchText, setSearchText] = useState<string>("");
 
   useEffect(() => {
-    props.onSelectChange && props.onSelectChange(selectedList);
+    props.onSelectChange?.(selectedList);
   }, [selectedList]);
 
   useEffect(() => {
@@ -145,7 +145,7 @@ const ModelList: <TBaseModel extends BaseModel>(
         });
       }
 
-      props.onListLoaded && props.onListLoaded(listResult.data);
+      props.onListLoaded?.(listResult.data);
       setModalList(listResult.data);
     } catch (err) {
       setError(API.getFriendlyMessage(err));

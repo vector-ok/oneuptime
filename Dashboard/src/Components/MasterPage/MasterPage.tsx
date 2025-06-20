@@ -4,7 +4,9 @@ import Footer from "../Footer/Footer";
 import Header from "../Header/Header";
 import NavBar from "../NavBar/NavBar";
 import Route from "Common/Types/API/Route";
-import SubscriptionStatus from "Common/Types/Billing/SubscriptionStatus";
+import SubscriptionStatus, {
+  SubscriptionStatusUtil,
+} from "Common/Types/Billing/SubscriptionStatus";
 import SSOAuthorizationException from "Common/Types/Exception/SsoAuthorizationException";
 import AppLink from "../AppLink/AppLink";
 import MasterPage from "Common/UI/Components/MasterPage/MasterPage";
@@ -49,25 +51,41 @@ const DashboardMasterPage: FunctionComponent<ComponentProps> = (
     error = props.error;
   }
 
-  let isSubscriptionInactive: boolean = false;
+  let isSubscriptionInactiveOrOverdue: boolean = false;
+  let isSubscriptionOverdue: boolean = false;
 
   if (props.selectedProject) {
-    isSubscriptionInactive = ProjectUtil.setIsSubscriptionInactive({
-      paymentProviderMeteredSubscriptionStatus:
+    isSubscriptionInactiveOrOverdue =
+      ProjectUtil.setIsSubscriptionInactiveOrOverdue({
+        paymentProviderMeteredSubscriptionStatus:
+          props.selectedProject?.paymentProviderMeteredSubscriptionStatus ||
+          SubscriptionStatus.Active,
+        paymentProviderSubscriptionStatus:
+          props.selectedProject?.paymentProviderSubscriptionStatus ||
+          SubscriptionStatus.Active,
+      });
+
+    isSubscriptionOverdue =
+      SubscriptionStatusUtil.isSubscriptionOverdue(
         props.selectedProject?.paymentProviderMeteredSubscriptionStatus ||
-        SubscriptionStatus.Active,
-      paymentProviderSubscriptionStatus:
+          SubscriptionStatus.Active,
+      ) ||
+      SubscriptionStatusUtil.isSubscriptionOverdue(
         props.selectedProject?.paymentProviderSubscriptionStatus ||
-        SubscriptionStatus.Active,
-    });
+          SubscriptionStatus.Active,
+      );
   }
 
   return (
     <div>
-      {BILLING_ENABLED && isSubscriptionInactive && (
+      {BILLING_ENABLED && isSubscriptionInactiveOrOverdue && (
         <TopAlert
           alertType={TopAlertType.DANGER}
-          title="Your project is not active because some invoices are unpaid."
+          title={
+            isSubscriptionOverdue
+              ? "Your project will become inactive soon because some of the invoices are unpaid"
+              : "Your project is not active because some invoices are unpaid. If left unpaid, your project will be deleted."
+          }
           description={
             <AppLink
               className="underline"

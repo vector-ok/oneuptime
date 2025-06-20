@@ -325,6 +325,66 @@ export default class StatusPageSubscriber extends BaseModel {
       Permission.ProjectAdmin,
       Permission.ProjectMember,
       Permission.CreateStatusPageSubscriber,
+      Permission.Public,
+    ],
+    read: [],
+    update: [],
+  })
+  @TableColumn({
+    required: false,
+    type: TableColumnType.ShortURL,
+    title: "Slack Incoming Webhook URL",
+    description:
+      "Slack incoming webhook URL to send notifications to Slack channel",
+  })
+  @Column({
+    nullable: true,
+    type: ColumnType.ShortURL,
+    transformer: URL.getDatabaseTransformer(),
+  })
+  public slackIncomingWebhookUrl?: URL = undefined;
+
+  @ColumnAccessControl({
+    create: [
+      Permission.ProjectOwner,
+      Permission.ProjectAdmin,
+      Permission.ProjectMember,
+      Permission.CreateStatusPageSubscriber,
+      Permission.Public,
+    ],
+    read: [
+      Permission.ProjectOwner,
+      Permission.ProjectAdmin,
+      Permission.ProjectMember,
+      Permission.ReadStatusPageSubscriber,
+    ],
+    update: [
+      Permission.ProjectOwner,
+      Permission.ProjectAdmin,
+      Permission.ProjectMember,
+      Permission.EditStatusPageSubscriber,
+    ],
+  })
+  @TableColumn({
+    required: false,
+    type: TableColumnType.ShortText,
+    title: "Slack Workspace Name",
+    description:
+      "Name of the Slack workspace for validation and identification",
+  })
+  @Column({
+    nullable: true,
+    type: ColumnType.ShortText,
+    length: ColumnLength.ShortText,
+  })
+  public slackWorkspaceName?: string = undefined;
+
+  @ColumnAccessControl({
+    create: [
+      Permission.ProjectOwner,
+      Permission.ProjectAdmin,
+      Permission.ProjectMember,
+      Permission.CreateStatusPageSubscriber,
     ],
     read: [
       Permission.ProjectOwner,

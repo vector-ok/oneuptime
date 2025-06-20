@@ -23,10 +23,22 @@ export default tseslint.config(
       "**/playwright-coverage/",
       "**/playwright-screenshots/",
       "**/playwright-videos",
-      "**/webpack.config.js", // TODO: Remove this ignore
       "**/service-worker.js", // TODO: Remove this ignore
       "**/Static/", // TODO: Remove this ignore
-      "**/*.js" // TODO: Remove this ignore
+      "**/*.js", // TODO: Remove this ignore
+      "**/tmp/",
+      "**/temp/",
+      "**/.tmp/",
+      "**/.temp/",
+      "**/logs/",
+      "**/*.log",
+      "**/greenlock/",
+      "**/Certs/",
+      "**/Backups/",
+      "**/.git/",
+      "**/.vscode/",
+      "**/.eslintcache",
+      "**/views/",
     ],
   },
   eslint.configs.recommended,
@@ -171,20 +183,35 @@ export default tseslint.config(
       "no-var": "error",
       "object-curly-spacing": ["error", "always"],
       "no-unneeded-ternary": "error",
-      "@typescript-eslint/ban-types": [
+      "@typescript-eslint/no-restricted-types": [
         "error",
         {
           types: {
-            String: true,
-            Boolean: true,
-            Number: true,
-            Symbol: false,
-            "{}": true,
-            Object: true,
-            object: true,
-            Function: true,
-          },
-          extendDefaults: true,
+            String: {
+              message: "Use 'string' instead of 'String'",
+              fixWith: "string"
+            },
+            Boolean: {
+              message: "Use 'boolean' instead of 'Boolean'",
+              fixWith: "boolean"
+            },
+            Number: {
+              message: "Use 'number' instead of 'Number'",
+              fixWith: "number"
+            },
+            "{}": {
+              message: "Use 'Record<string, unknown>' instead of '{}'"
+            },
+            Object: {
+              message: "Use 'Record<string, unknown>' instead of 'Object'"
+            },
+            object: {
+              message: "Use 'Record<string, unknown>' instead of 'object'"
+            },
+            Function: {
+              message: "Use a specific function type instead of 'Function'"
+            }
+          }
         },
       ],
     },
@@ -209,7 +236,12 @@ export default tseslint.config(
       parserOptions: {
         project: ["./tsconfig.json"], // Specify it only for TypeScript files
         // or `project: true` in typescript-eslint version >= 5.52.0
+        createDefaultProgram: false,
+        tsconfigRootDir: ".",
       },
+    },
+    linterOptions: {
+      reportUnusedDisableDirectives: false, // Disable for performance
     },
   },
 );

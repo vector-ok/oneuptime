@@ -1,3 +1,4 @@
+import MarkdownUtil from "Common/UI/Utils/Markdown";
 import UserElement from "../../../Components/User/User";
 import ProjectUser from "../../../Utils/ProjectUser";
 import PageComponentProps from "../../PageComponentProps";
@@ -123,6 +124,7 @@ const PublicNote: FunctionComponent<PageComponentProps> = (
         modelType={ScheduledMaintenancePublicNote}
         id="table-scheduled-maintenance-internal-note"
         name="Scheduled Maintenance Events > Public Notes"
+        userPreferencesKey="scheduled-maintenance-public-note-table"
         isDeleteable={true}
         createEditModalWidth={ModalWidth.Large}
         isCreateable={true}
@@ -174,8 +176,9 @@ const PublicNote: FunctionComponent<PageComponentProps> = (
             title: "Public Scheduled Maintenance Note",
             fieldType: FormFieldSchemaType.Markdown,
             required: true,
-            description:
-              "This note is visible on your Status Page. This is in Markdown.",
+            description: MarkdownUtil.getMarkdownCheatsheet(
+              "This note is visible on your Status Page",
+            ),
           },
           {
             field: {

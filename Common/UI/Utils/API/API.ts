@@ -2,22 +2,21 @@ import LocalStorage from "../LocalStorage";
 import Navigation from "../Navigation";
 import PermissionUtil from "../Permission";
 import User from "../User";
-import HTTPErrorResponse from "Common/Types/API/HTTPErrorResponse";
-import Headers from "Common/Types/API/Headers";
-import Hostname from "Common/Types/API/Hostname";
-import Protocol from "Common/Types/API/Protocol";
-import Route from "Common/Types/API/Route";
-import URL from "Common/Types/API/URL";
-import Dictionary from "Common/Types/Dictionary";
-import APIException from "Common/Types/Exception/ApiException";
-import Exception from "Common/Types/Exception/Exception";
-import JSONFunctions from "Common/Types/JSONFunctions";
+import HTTPErrorResponse from "../../../Types/API/HTTPErrorResponse";
+import Headers from "../../../Types/API/Headers";
+import Hostname from "../../../Types/API/Hostname";
+import Protocol from "../../../Types/API/Protocol";
+import Route from "../../../Types/API/Route";
+import URL from "../../../Types/API/URL";
+import Dictionary from "../../../Types/Dictionary";
+import APIException from "../../../Types/Exception/ApiException";
+import Exception from "../../../Types/Exception/Exception";
+import JSONFunctions from "../../../Types/JSONFunctions";
 import {
   UserGlobalAccessPermission,
   UserTenantAccessPermission,
-} from "Common/Types/Permission";
-import API from "Common/Utils/API";
-import Cookies from "universal-cookie";
+} from "../../../Types/Permission";
+import API from "../../../Utils/API";
 
 class BaseAPI extends API {
   public constructor(protocol: Protocol, hostname: Hostname, route?: Route) {
@@ -97,16 +96,14 @@ class BaseAPI extends API {
   ): HTTPErrorResponse | APIException {
     // 405 Status - Tenant not found. If Project was deleted.
     // 401 Status - User is not logged in.
+    // 403 Status - Forbidden. If the IP address is not whitelisted (for example).
     if (
       error instanceof HTTPErrorResponse &&
       (error.statusCode === 401 || error.statusCode === 405)
     ) {
       const loginRoute: Route = this.getLoginRoute();
 
-      User.clear();
-      const cookies: Cookies = new Cookies();
-      cookies.remove("admin-data", { path: "/" });
-      cookies.remove("data", { path: "/" });
+      User.logout();
 
       if (Navigation.getQueryStringByName("token")) {
         Navigation.navigate(loginRoute.addRouteParam("sso", "true"), {
@@ -119,11 +116,24 @@ class BaseAPI extends API {
       }
     }
 
+    if (
+      error instanceof HTTPErrorResponse &&
+      error.statusCode === 403 &&
+      Navigation.getCurrentRoute().toString() !==
+        this.getForbiddenRoute().toString()
+    ) {
+      Navigation.navigate(this.getForbiddenRoute(), { forceNavigate: true });
+    }
+
     return error;
   }
 
   protected static getLoginRoute(): Route {
     return new Route("/accounts/login");
+  }
+
+  protected static getForbiddenRoute(): Route {
+    return new Route("/accounts/forbidden");
   }
 
   public static getFriendlyMessage(

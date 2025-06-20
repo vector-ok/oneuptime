@@ -287,7 +287,7 @@ export default class ScheduledMaintenanceTemplate extends BaseModel {
     type: TableColumnType.Markdown,
     title: "Description",
     description:
-      "Description of this scheduled event that will show up on Status Page. This is in markdown.",
+      "Description of this scheduled event that will show up on Status Page. This is a markdown field.",
   })
   @Column({
     nullable: true,

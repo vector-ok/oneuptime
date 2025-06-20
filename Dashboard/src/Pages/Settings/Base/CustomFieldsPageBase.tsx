@@ -34,6 +34,7 @@ const CustomFieldsPageBase: (
     <Fragment>
       <ModelTable<CustomFieldsBaseModels>
         modelType={props.modelType}
+        userPreferencesKey="custom-fields-table"
         query={{
           projectId: ProjectUtil.getCurrentProjectId()!,
         }}
@@ -74,7 +75,7 @@ const CustomFieldsPageBase: (
           },
           {
             field: {
-              type: true,
+              customFieldType: true,
             },
             title: "Field Type",
             fieldType: FormFieldSchemaType.Dropdown,
@@ -108,7 +109,7 @@ const CustomFieldsPageBase: (
           },
           {
             field: {
-              type: true,
+              customFieldType: true,
             },
             title: "Field Type",
             type: FieldType.Text,
@@ -132,7 +133,7 @@ const CustomFieldsPageBase: (
           },
           {
             field: {
-              type: true,
+              customFieldType: true,
             },
             title: "Field Type",
             type: FieldType.Text,

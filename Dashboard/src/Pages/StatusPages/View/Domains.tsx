@@ -60,6 +60,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
             statusPageId: modelId,
           }}
           name="Status Page > Domains"
+          userPreferencesKey="status-page-domains-table"
           id="domains-table"
           isDeleteable={true}
           isCreateable={true}
@@ -169,6 +170,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
                 minLength: 2,
               },
               stepId: "basic",
+              disableSpellCheck: true,
             },
             {
               field: {
@@ -209,6 +211,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
               stepId: "more",
               placeholder:
                 "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+              disableSpellCheck: true,
               showIf: (item: FormValues<StatusPageDomain>): boolean => {
                 return Boolean(item.isCustomCertificate);
               },
@@ -223,6 +226,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
               placeholder:
                 "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
               stepId: "more",
+              disableSpellCheck: true,
               showIf: (item: FormValues<StatusPageDomain>): boolean => {
                 return Boolean(item.isCustomCertificate);
               },

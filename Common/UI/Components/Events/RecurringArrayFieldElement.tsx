@@ -1,6 +1,6 @@
-import EventInterval from "Common/Types/Events/EventInterval";
-import Recurring from "Common/Types/Events/Recurring";
-import PositiveNumber from "Common/Types/PositiveNumber";
+import EventInterval from "../../../Types/Events/EventInterval";
+import Recurring from "../../../Types/Events/Recurring";
+import PositiveNumber from "../../../Types/PositiveNumber";
 import React, { FunctionComponent, ReactElement, useState } from "react";
 import RecurringFieldElement from "./RecurringFieldElement";
 import Button, { ButtonSize, ButtonStyleType } from "../Button/Button";
@@ -63,7 +63,7 @@ const RecurringArrayFieldElement: FunctionComponent<ComponentProps> = (
                     const newData: Array<Recurring> = [...(recurrings || [])];
                     newData.splice(index, 1);
                     setRecurrings(newData);
-                    props.onChange && props.onChange(newData);
+                    props.onChange?.(newData);
                   }}
                 />
               </div>
@@ -87,7 +87,7 @@ const RecurringArrayFieldElement: FunctionComponent<ComponentProps> = (
 
             newData.push(recurring);
             setRecurrings(newData);
-            props.onChange && props.onChange(newData);
+            props.onChange?.(newData);
           }}
         />
       </div>

@@ -19,6 +19,7 @@ export interface PortMonitorResponse {
   isOnline: boolean;
   responseTimeInMS?: PositiveNumber | undefined;
   failureCause: string;
+  isTimeout?: boolean | undefined;
 }
 
 export interface PingOptions {
@@ -95,7 +96,7 @@ export default class PortMonitor {
           socket.connect(port.toNumber(), hostAddress, () => {
             const endTime: [number, number] = process.hrtime(startTime);
             const responseTimeInMS: PositiveNumber = new PositiveNumber(
-              (endTime[0] * 1000000000 + endTime[1]) / 1000000,
+              Math.ceil((endTime[0] * 1000000000 + endTime[1]) / 1000000),
             );
 
             logger.debug(
@@ -199,8 +200,21 @@ export default class PortMonitor {
         }
       }
 
+      const isTimeout: boolean =
+        err instanceof UnableToReachServer &&
+        (err as UnableToReachServer).message === "Ping timeout";
+
+      if (isTimeout) {
+        return {
+          isOnline: true,
+          failureCause: (err as any).toString(),
+          isTimeout: true,
+        };
+      }
+
       return {
         isOnline: false,
+        isTimeout: false,
         failureCause: (err as any).toString(),
       };
     }

@@ -1,3 +1,4 @@
+import MarkdownUtil from "Common/UI/Utils/Markdown";
 import UserElement from "../../../Components/User/User";
 import ProjectUser from "../../../Utils/ProjectUser";
 import PageComponentProps from "../../PageComponentProps";
@@ -115,6 +116,7 @@ const IncidentDelete: FunctionComponent<PageComponentProps> = (
         showCreateForm={Object.keys(initialValuesForIncident).length > 0}
         createInitialValues={initialValuesForIncident}
         name="Monitor > Internal Note"
+        userPreferencesKey="incident-internal-note-table"
         isDeleteable={true}
         showViewIdButton={true}
         isCreateable={true}
@@ -159,8 +161,9 @@ const IncidentDelete: FunctionComponent<PageComponentProps> = (
             title: "Private Incident Note",
             fieldType: FormFieldSchemaType.Markdown,
             required: true,
-            description:
-              "Add a private note to this incident here. This is private to your team and is not visible on Status Page. This is in Markdown.",
+            description: MarkdownUtil.getMarkdownCheatsheet(
+              "Add a private note to this incident here. This is private to your team and is not visible on Status Page",
+            ),
           },
         ]}
         showAs={ShowAs.List}

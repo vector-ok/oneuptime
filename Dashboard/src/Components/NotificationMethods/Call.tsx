@@ -43,6 +43,7 @@ const Call: () => JSX.Element = (): ReactElement => {
     <>
       <ModelTable<UserCall>
         modelType={UserCall}
+        userPreferencesKey={"user-call-table"}
         query={{
           projectId: ProjectUtil.getCurrentProjectId()!,
           userId: User.getUserId().toString(),
@@ -135,6 +136,7 @@ const Call: () => JSX.Element = (): ReactElement => {
             validation: {
               minLength: 2,
             },
+            disableSpellCheck: true,
           },
         ]}
         showRefreshButton={true}

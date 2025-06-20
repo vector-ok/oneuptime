@@ -1,26 +1,26 @@
 import { FormType } from "../../Components/Forms/ModelForm";
 import { APP_API_URL } from "../../Config";
-import API from "../../Utils/API/API";
-import GroupBy from "../BaseDatabase/GroupBy";
-import BaseListResult from "../BaseDatabase/ListResult";
-import BaseRequestOptions from "../BaseDatabase/RequestOptions";
-import Select from "../BaseDatabase/Select";
-import Sort from "../BaseDatabase/Sort";
+import GroupBy from "../../../Types/BaseDatabase/GroupBy";
+import BaseListResult from "../../../Types/BaseDatabase/ListResult";
+import Select from "../../../Types/BaseDatabase/Select";
 import Navigation from "../Navigation";
 import ProjectUtil from "../Project";
-import BaseModel from "Common/Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
-import HTTPErrorResponse from "Common/Types/API/HTTPErrorResponse";
-import HTTPMethod from "Common/Types/API/HTTPMethod";
-import HTTPResponse from "Common/Types/API/HTTPResponse";
-import Route from "Common/Types/API/Route";
-import URL from "Common/Types/API/URL";
-import Dictionary from "Common/Types/Dictionary";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import { JSONArray, JSONObject } from "Common/Types/JSON";
-import JSONFunctions from "Common/Types/JSONFunctions";
-import ObjectID from "Common/Types/ObjectID";
-import Project from "Common/Models/DatabaseModels/Project";
+import BaseRequestOptions from "../API/RequestOptions";
+import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import HTTPErrorResponse from "../../../Types/API/HTTPErrorResponse";
+import HTTPMethod from "../../../Types/API/HTTPMethod";
+import HTTPResponse from "../../../Types/API/HTTPResponse";
+import Route from "../../../Types/API/Route";
+import URL from "../../../Types/API/URL";
+import Dictionary from "../../../Types/Dictionary";
+import BadDataException from "../../../Types/Exception/BadDataException";
+import { JSONArray, JSONObject } from "../../../Types/JSON";
+import JSONFunctions from "../../../Types/JSONFunctions";
+import ObjectID from "../../../Types/ObjectID";
+import Project from "../../../Models/DatabaseModels/Project";
 import Query from "../../../Types/BaseDatabase/Query";
+import API from "../API/API";
+import Sort from "../../../Types/BaseDatabase/Sort";
 
 export class ModelAPIHttpResponse<
   TBaseModel extends BaseModel,
@@ -28,8 +28,8 @@ export class ModelAPIHttpResponse<
   public miscData?: JSONObject | undefined;
 }
 
-export interface ListResult<TBaseModel extends BaseModel>
-  extends BaseListResult<TBaseModel> {}
+export type ListResult<TBaseModel extends BaseModel> =
+  BaseListResult<TBaseModel>;
 
 export interface RequestOptions extends BaseRequestOptions {
   isMultiTenantRequest?: boolean | undefined;

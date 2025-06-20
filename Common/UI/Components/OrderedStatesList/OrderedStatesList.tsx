@@ -3,8 +3,8 @@ import ComponentLoader from "../ComponentLoader/ComponentLoader";
 import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import Icon, { SizeProp } from "../Icon/Icon";
 import Item from "./Item";
-import GenericObject from "Common/Types/GenericObject";
-import IconProp from "Common/Types/Icon/IconProp";
+import GenericObject from "../../../Types/GenericObject";
+import IconProp from "../../../Types/Icon/IconProp";
 import React, { ReactElement } from "react";
 
 export interface ComponentProps<T extends GenericObject> {
@@ -78,12 +78,13 @@ const OrderedStatesList: OrderedStatesListFunction = <T extends GenericObject>(
                     <div
                       className="m-auto rounded-full items-center cursor-pointer text-gray-400 hover:bg-gray-50 hover:text-gray-600 items-center border border-gray-300 p-5 w-fit"
                       onClick={() => {
-                        props.onCreateNewItem &&
+                        if (props.onCreateNewItem) {
                           props.onCreateNewItem(
                             item[props.orderField]
                               ? (item[props.orderField] as number) + 1
                               : 0,
                           );
+                        }
                       }}
                     >
                       <div className="flex text-center">
@@ -124,12 +125,13 @@ const OrderedStatesList: OrderedStatesListFunction = <T extends GenericObject>(
                     <div
                       className="m-auto items-center cursor-pointer text-gray-400 hover:bg-gray-50 border hover:text-gray-600 rounded-full border-gray-300 p-5 w-fit"
                       onClick={() => {
-                        props.onCreateNewItem &&
+                        if (props.onCreateNewItem) {
                           props.onCreateNewItem(
                             item[props.orderField]
                               ? (item[props.orderField] as number) + 1
                               : 0,
                           );
+                        }
                       }}
                     >
                       <div className="flex items-center ">

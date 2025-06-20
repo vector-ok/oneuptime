@@ -1,31 +1,31 @@
 import { FormType } from "../../Components/Forms/ModelForm";
 import { APP_API_URL } from "../../Config";
 import API from "../API/API";
-import GroupBy from "../BaseDatabase/GroupBy";
-import BaseListResult from "../BaseDatabase/ListResult";
-import RequestOptions from "../BaseDatabase/RequestOptions";
-import Select from "../BaseDatabase/Select";
-import Sort from "../BaseDatabase/Sort";
+import GroupBy from "../../../Types/BaseDatabase/GroupBy";
+import BaseListResult from "../../../Types/BaseDatabase/ListResult";
+import RequestOptions from "../API/RequestOptions";
+import Select from "../../../Types/BaseDatabase/Select";
+import Sort from "../../../Types/BaseDatabase/Sort";
 import Navigation from "../Navigation";
 import ProjectUtil from "../Project";
-import AnalyticsBaseModel from "Common/Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
-import HTTPErrorResponse from "Common/Types/API/HTTPErrorResponse";
-import HTTPMethod from "Common/Types/API/HTTPMethod";
-import HTTPResponse from "Common/Types/API/HTTPResponse";
-import Route from "Common/Types/API/Route";
-import URL from "Common/Types/API/URL";
-import Dictionary from "Common/Types/Dictionary";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import { JSONArray, JSONObject } from "Common/Types/JSON";
-import JSONFunctions from "Common/Types/JSONFunctions";
-import ObjectID from "Common/Types/ObjectID";
-import Project from "Common/Models/DatabaseModels/Project";
-import AggregateBy from "Common/Types/BaseDatabase/AggregateBy";
-import AggregatedResult from "Common/Types/BaseDatabase/AggregatedResult";
+import AnalyticsBaseModel from "../../../Models/AnalyticsModels/AnalyticsBaseModel/AnalyticsBaseModel";
+import HTTPErrorResponse from "../../../Types/API/HTTPErrorResponse";
+import HTTPMethod from "../../../Types/API/HTTPMethod";
+import HTTPResponse from "../../../Types/API/HTTPResponse";
+import Route from "../../../Types/API/Route";
+import URL from "../../../Types/API/URL";
+import Dictionary from "../../../Types/Dictionary";
+import BadDataException from "../../../Types/Exception/BadDataException";
+import { JSONArray, JSONObject } from "../../../Types/JSON";
+import JSONFunctions from "../../../Types/JSONFunctions";
+import ObjectID from "../../../Types/ObjectID";
+import Project from "../../../Models/DatabaseModels/Project";
+import AggregateBy from "../../../Types/BaseDatabase/AggregateBy";
+import AggregatedResult from "../../../Types/BaseDatabase/AggregatedResult";
 import Query from "../../../Types/BaseDatabase/Query";
 
-export interface ListResult<TAnalyticsBaseModel extends AnalyticsBaseModel>
-  extends BaseListResult<TAnalyticsBaseModel> {}
+export type ListResult<TAnalyticsBaseModel extends AnalyticsBaseModel> =
+  BaseListResult<TAnalyticsBaseModel>;
 
 export default class ModelAPI {
   public static async create<

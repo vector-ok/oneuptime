@@ -8,15 +8,15 @@ import {
   NextFunction,
   OneUptimeRequest,
 } from "../Utils/Express";
-import OneUptimeDate from "Common/Types/Date";
-import Dictionary from "Common/Types/Dictionary";
-import BadDataException from "Common/Types/Exception/BadDataException";
-import ObjectID from "Common/Types/ObjectID";
-import { UserTenantAccessPermission } from "Common/Types/Permission";
-import UserType from "Common/Types/UserType";
-import ApiKey from "Common/Models/DatabaseModels/ApiKey";
-import GlobalConfig from "Common/Models/DatabaseModels/GlobalConfig";
-import User from "Common/Models/DatabaseModels/User";
+import OneUptimeDate from "../../Types/Date";
+import Dictionary from "../../Types/Dictionary";
+import BadDataException from "../../Types/Exception/BadDataException";
+import ObjectID from "../../Types/ObjectID";
+import { UserTenantAccessPermission } from "../../Types/Permission";
+import UserType from "../../Types/UserType";
+import ApiKey from "../../Models/DatabaseModels/ApiKey";
+import GlobalConfig from "../../Models/DatabaseModels/GlobalConfig";
+import User from "../../Models/DatabaseModels/User";
 import APIKeyAccessPermission from "../Utils/APIKey/AccessPermission";
 import CaptureSpan from "../Utils/Telemetry/CaptureSpan";
 
@@ -67,7 +67,7 @@ export default class ProjectMiddleware {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const tenantId: ObjectID | null = this.getProjectId(req);
+      let tenantId: ObjectID | null = this.getProjectId(req);
 
       const apiKey: ObjectID | null = this.getApiKey(req);
 
@@ -76,23 +76,33 @@ export default class ProjectMiddleware {
       }
 
       if (!apiKey) {
-        throw new BadDataException("ApiKey not found in the request");
+        throw new BadDataException(
+          "API Key not found in the request header. Please provide a valid API Key in the request header.",
+        );
       }
 
       let apiKeyModel: ApiKey | null = null;
 
-      if (tenantId) {
+      if (apiKey) {
         apiKeyModel = await ApiKeyService.findOneBy({
           query: {
-            projectId: tenantId,
             apiKey: apiKey,
             expiresAt: QueryHelper.greaterThan(OneUptimeDate.getCurrentDate()),
           },
           select: {
             _id: true,
+            projectId: true,
           },
           props: { isRoot: true },
         });
+
+        tenantId = apiKeyModel?.projectId || null;
+
+        if (!tenantId) {
+          throw new BadDataException("Invalid API Key");
+        }
+
+        (req as OneUptimeRequest).tenantId = tenantId;
 
         if (apiKeyModel) {
           (req as OneUptimeRequest).userType = UserType.API;
@@ -174,6 +184,11 @@ export default class ProjectMiddleware {
 
           return next();
         }
+      }
+
+      if (apiKey) {
+        // If we have an API key but no tenant ID, we throw an error.
+        throw new BadDataException("Invalid API Key");
       }
 
       if (!tenantId) {

@@ -20,6 +20,7 @@ const ScheduledMaintenanceNoteTemplates: FunctionComponent<
         isEditable={false}
         isCreateable={true}
         isViewable={true}
+        userPreferencesKey="scheduled-maintenance-note-templates-table"
         cardProps={{
           title:
             "Public or Private Note Templates for Scheduled Maintenance Events",
@@ -96,7 +97,7 @@ const ScheduledMaintenanceNoteTemplates: FunctionComponent<
               templateDescription: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
         columns={[
@@ -112,7 +113,7 @@ const ScheduledMaintenanceNoteTemplates: FunctionComponent<
               templateDescription: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
       />

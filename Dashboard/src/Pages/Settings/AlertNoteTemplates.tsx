@@ -16,6 +16,7 @@ const AlertNoteTemplates: FunctionComponent<PageComponentProps> = (
         modelType={AlertNoteTemplate}
         id="alert-templates-table"
         name="Settings > Alert Templates"
+        userPreferencesKey="alert-templates-table"
         isDeleteable={false}
         isEditable={false}
         isCreateable={true}
@@ -111,7 +112,7 @@ const AlertNoteTemplates: FunctionComponent<PageComponentProps> = (
               templateDescription: true,
             },
             title: "Description",
-            type: FieldType.Text,
+            type: FieldType.LongText,
           },
         ]}
       />

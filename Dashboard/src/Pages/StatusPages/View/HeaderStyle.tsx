@@ -56,7 +56,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
               field: {
                 logoFile: {
                   file: true,
-                  type: true,
+                  fileType: true,
                 },
               },
               fieldType: FieldType.ImageFile,
@@ -67,7 +67,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
               field: {
                 coverImageFile: {
                   file: true,
-                  type: true,
+                  fileType: true,
                 },
               },
               fieldType: FieldType.ImageFile,
@@ -83,6 +83,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
         modelType={StatusPageHeaderLink}
         id="status-page-header-link"
         name="Status Page > Header Links"
+        userPreferencesKey="status-page-header-link-table"
         isDeleteable={true}
         sortBy="order"
         sortOrder={SortOrder.Ascending}
@@ -128,6 +129,7 @@ const StatusPageDelete: FunctionComponent<PageComponentProps> = (
             fieldType: FormFieldSchemaType.URL,
             required: true,
             placeholder: "https://link.com",
+            disableSpellCheck: true,
           },
         ]}
         showRefreshButton={true}

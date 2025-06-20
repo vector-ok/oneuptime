@@ -1,8 +1,8 @@
 import useComponentOutsideClick from "../../Types/UseComponentOutsideClick";
 import Icon, { SizeProp } from "../Icon/Icon";
 import Image from "../Image/Image";
-import Route from "Common/Types/API/Route";
-import IconProp from "Common/Types/Icon/IconProp";
+import Route from "../../../Types/API/Route";
+import IconProp from "../../../Types/Icon/IconProp";
 import React, {
   FunctionComponent,
   ReactElement,
@@ -47,7 +47,7 @@ const HeaderIconDropdownButton: FunctionComponent<ComponentProps> = (
           aria-expanded="false"
           aria-haspopup="true"
           onClick={() => {
-            props.onClick && props.onClick();
+            props.onClick?.();
             setIsComponentVisible(!isDropdownVisible);
           }}
         >
@@ -56,7 +56,7 @@ const HeaderIconDropdownButton: FunctionComponent<ComponentProps> = (
             <Image
               className="h-8 w-8 rounded-full"
               onClick={() => {
-                props.onClick && props.onClick();
+                props.onClick?.();
               }}
               imageUrl={Route.fromString(`${props.iconImageUrl}`)}
               alt={props.name}
