@@ -3,6 +3,7 @@ import PageComponentProps from "../../PageComponentProps";
 import { JSONObject } from "Common/Types/JSON";
 import ObjectID from "Common/Types/ObjectID";
 import { LIMIT_PER_PROJECT } from "Common/Types/Database/LimitMax";
+import OneUptimeDate from "Common/Types/Date";
 import { ButtonStyleType } from "Common/UI/Components/Button/Button";
 import BasicFormModal from "Common/UI/Components/FormModal/BasicFormModal";
 import FormFieldSchemaType from "Common/UI/Components/Forms/Types/FormFieldSchemaType";
@@ -27,6 +28,8 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import AttachmentList from "../../../Components/Attachment/AttachmentList";
+import { getModelIdString } from "../../../Utils/ModelId";
 
 const POSTMORTEM_FORM_FIELDS: Fields<Incident> = [
   {
@@ -40,6 +43,43 @@ const POSTMORTEM_FORM_FIELDS: Fields<Incident> = [
     description: MarkdownUtil.getMarkdownCheatsheet(
       "Capture what happened, impact, resolution, and follow-up actions.",
     ),
+  },
+  {
+    field: {
+      postmortemAttachments: true,
+    },
+    title: "Postmortem Attachments",
+    fieldType: FormFieldSchemaType.MultipleFiles,
+    required: false,
+    description:
+      "Upload supporting evidence (images, reports, timelines) that can be shared once the postmortem is public.",
+  },
+  {
+    field: {
+      postmortemPostedAt: true,
+    },
+    title: "Postmortem Published At",
+    fieldType: FormFieldSchemaType.DateTime,
+    required: false,
+    description:
+      "Set the posted-on timestamp subscribers will see. This is in " +
+      OneUptimeDate.getCurrentTimezoneString() +
+      ".",
+    placeholder: "Select date and time",
+    getDefaultValue: () => {
+      return OneUptimeDate.getCurrentDate();
+    },
+  },
+  {
+    field: {
+      showPostmortemOnStatusPage: true,
+    },
+    title: "Publish on Status Page",
+    fieldType: FormFieldSchemaType.Toggle,
+    required: false,
+    description:
+      "Enable to display the postmortem note and attachments as the closing update for this incident on your status page.",
+    defaultValue: false,
   },
 ];
 
@@ -162,6 +202,7 @@ const IncidentPostmortem: FunctionComponent<
           showDetailsInNumberOfColumns: 1,
           modelType: Incident,
           id: "model-detail-incident-postmortem-note",
+          selectMoreFields: {},
           fields: [
             {
               field: {
@@ -170,6 +211,61 @@ const IncidentPostmortem: FunctionComponent<
               title: "",
               placeholder: "No postmortem note documented for this incident.",
               fieldType: FieldType.Markdown,
+            },
+            {
+              field: {
+                showPostmortemOnStatusPage: true,
+              },
+              title: "Visible on Status Page?",
+              fieldType: FieldType.Boolean,
+            },
+            {
+              field: {
+                postmortemPostedAt: true,
+              },
+              title: "Postmortem Published At",
+              fieldType: FieldType.DateTime,
+              placeholder: "-",
+            },
+            {
+              field: {
+                postmortemAttachments: {
+                  _id: true,
+                  name: true,
+                  fileType: true,
+                  createdAt: true,
+                },
+              },
+              title: "Postmortem Attachments",
+              fieldType: FieldType.Element,
+              getElement: (item: Incident): ReactElement => {
+                const modelIdString: string | null = getModelIdString(item);
+
+                if (!item.postmortemAttachments?.length) {
+                  return (
+                    <div className="text-sm text-gray-500">
+                      No postmortem attachments uploaded for this incident.
+                    </div>
+                  );
+                }
+
+                if (!modelIdString) {
+                  return (
+                    <div className="text-sm text-gray-400 italic">
+                      Attachments are available but the incident identifier is
+                      missing, so they cannot be displayed.
+                    </div>
+                  );
+                }
+
+                return (
+                  <AttachmentList
+                    modelId={modelIdString}
+                    attachments={item.postmortemAttachments}
+                    attachmentApiPath="/incident/postmortem/attachment"
+                  />
+                );
+              },
             },
           ],
           modelId: modelId,

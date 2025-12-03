@@ -30,6 +30,8 @@ export interface TimelineItem {
   icon: IconProp;
   iconColor: Color;
   attachments?: Array<TimelineAttachment>;
+  title?: string;
+  highlight?: boolean;
 }
 
 export interface EventItemLabel {
@@ -258,25 +260,41 @@ const EventItem: FunctionComponent<ComponentProps> = (
                             aria-hidden="true"
                           ></span>
                         )}
-                        <div className="relative flex items-start space-x-3">
-                          <div>
-                            <div className="relative px-1">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
-                                <Icon
-                                  icon={item.icon}
-                                  className="h-5 w-5 text-gray-500"
-                                  style={{
-                                    color: item.iconColor.toString(),
-                                  }}
-                                />
+                        <div
+                          className={`relative flex items-start space-x-3 ${
+                            item.highlight
+                              ? "rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 shadow-sm"
+                              : ""
+                          }`}
+                        >
+                          {!item.highlight && (
+                            <div>
+                              <div className="relative px-1">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
+                                  <Icon
+                                    icon={item.icon}
+                                    className="h-5 w-5 text-gray-500"
+                                    style={{
+                                      color: item.iconColor.toString(),
+                                    }}
+                                  />
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
                           <div className="min-w-0 flex-1">
                             <div>
                               <div className="text-sm">
-                                <span className="font-medium text-gray-900">
-                                  Update to this {props.eventType}
+                                <span
+                                  className={`font-medium ${
+                                    item.highlight
+                                      ? "text-base text-gray-900"
+                                      : "text-sm text-gray-900"
+                                  }`}
+                                >
+                                  {item.title
+                                    ? item.title
+                                    : `Update to this ${props.eventType}`}
                                 </span>
                               </div>
                               <p className="mt-0.5 text-sm text-gray-500">
