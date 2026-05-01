@@ -457,6 +457,10 @@ const FormField: <T extends GenericObject>(
           {props.field.fieldType === FormFieldSchemaType.Dictionary && (
             <DictionaryForm
               keys={props.field.jsonKeysForDictionary}
+              valueSuggestions={props.field.dictionaryValueSuggestions}
+              onKeySelected={props.field.onDictionaryKeySelected}
+              isLoadingKeys={props.field.isLoadingDictionaryKeys}
+              loadingValueKeys={props.field.loadingDictionaryValueKeys}
               addButtonSuffix={props.field.title}
               keyPlaceholder={"Key"}
               valuePlaceholder={"Value"}

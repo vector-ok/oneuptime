@@ -81,9 +81,22 @@ const FilterComponent: FilterComponentFunction = <T extends GenericObject>(
   const formatJson: FormatJsonFunction = (
     json: Dictionary<string | number | boolean>,
   ): ReactElement => {
+    // Ignore entries with empty key or empty value — they aren't real filters.
+    const visibleKeys: Array<string> = Object.keys(json).filter(
+      (key: string) => {
+        const value: string | number | boolean | undefined = json[key];
+        return (
+          key.trim() !== "" &&
+          value !== undefined &&
+          value !== null &&
+          String(value).trim() !== ""
+        );
+      },
+    );
+
     return (
       <div className="flex space-x-2 -mt-1">
-        {Object.keys(json).map((key: string, i: number) => {
+        {visibleKeys.map((key: string, i: number) => {
           let jsonText: string | number | boolean = json[key] as
             | string
             | number
@@ -334,13 +347,24 @@ const FilterComponent: FilterComponentFunction = <T extends GenericObject>(
         key
       ] as Dictionary<string | number | boolean>;
 
-      // if json is empty, return null
+      // Count only non-empty entries — empty key/value pairs aren't real filters.
+      const nonEmptyEntryCount: number = Object.keys(json).filter(
+        (entryKey: string) => {
+          const value: string | number | boolean | undefined = json[entryKey];
+          return (
+            entryKey.trim() !== "" &&
+            value !== undefined &&
+            value !== null &&
+            String(value).trim() !== ""
+          );
+        },
+      ).length;
 
-      if (Object.keys(json).length === 0) {
+      if (nonEmptyEntryCount === 0) {
         return null;
       }
 
-      const isPlural: boolean = Object.keys(json).length > 1;
+      const isPlural: boolean = nonEmptyEntryCount > 1;
 
       return (
         <span className="inline-flex items-center space-x-1">

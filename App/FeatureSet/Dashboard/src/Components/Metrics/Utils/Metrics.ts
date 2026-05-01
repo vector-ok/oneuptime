@@ -23,6 +23,31 @@ import InBetween from "Common/Types/BaseDatabase/InBetween";
 import MetricFormulaConfigData from "Common/Types/Metrics/MetricFormulaConfigData";
 import MetricFormulaEvaluator from "Common/Utils/Metrics/MetricFormulaEvaluator";
 import MetricResultUnitConverter from "Common/Utils/Metrics/MetricResultUnitConverter";
+import Dictionary from "Common/Types/Dictionary";
+
+type SanitizeAttributeFiltersFunction = (
+  attributes: Dictionary<string | number | boolean> | undefined,
+) => Dictionary<string | number | boolean> | undefined;
+
+export const sanitizeAttributeFilters: SanitizeAttributeFiltersFunction = (
+  attributes: Dictionary<string | number | boolean> | undefined,
+): Dictionary<string | number | boolean> | undefined => {
+  if (!attributes) {
+    return undefined;
+  }
+  const result: Dictionary<string | number | boolean> = {};
+  for (const [key, value] of Object.entries(attributes)) {
+    if (
+      key.trim() !== "" &&
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+    ) {
+      result[key] = value;
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+};
 
 export default class MetricUtil {
   public static async fetchResults(data: {
@@ -68,8 +93,11 @@ export default class MetricUtil {
               projectId: ProjectUtil.getCurrentProjectId()!,
               time: metricViewData.startAndEndDate!,
               name: queryConfig.metricQueryData.filterData.metricName!,
-              attributes: queryConfig.metricQueryData.filterData
-                .attributes as any,
+              attributes: sanitizeAttributeFilters(
+                queryConfig.metricQueryData.filterData.attributes as
+                  | Dictionary<string | number | boolean>
+                  | undefined,
+              ) as any,
             },
             aggregationType:
               (queryConfig.metricQueryData.filterData

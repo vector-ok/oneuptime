@@ -609,7 +609,10 @@ const MetricCharts: FunctionComponent<ComponentProps> = (
         });
       }
 
-      // Build metric info for the info icon modal
+      /*
+       * Build metric info for the info icon modal.
+       * Skip empty key/value entries — they aren't applied as filters.
+       */
       const metricAttributes: Dictionary<string> = {};
       const filterAttributes:
         | Dictionary<string | boolean | number>
@@ -619,7 +622,16 @@ const MetricCharts: FunctionComponent<ComponentProps> = (
 
       if (filterAttributes) {
         for (const key of Object.keys(filterAttributes)) {
-          metricAttributes[key] = String(filterAttributes[key]);
+          const value: string | boolean | number | undefined =
+            filterAttributes[key];
+          if (
+            key.trim() !== "" &&
+            value !== undefined &&
+            value !== null &&
+            String(value).trim() !== ""
+          ) {
+            metricAttributes[key] = String(value);
+          }
         }
       }
 

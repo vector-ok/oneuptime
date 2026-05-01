@@ -33,6 +33,7 @@ export interface ComponentProps {
     | Record<string, Array<string>>
     | undefined;
   onAttributeKeySelected?: ((key: string) => void) | undefined;
+  loadingAttributeValueKeys?: Array<string> | undefined;
 }
 
 const MetricGraphConfig: FunctionComponent<ComponentProps> = (
@@ -50,10 +51,32 @@ const MetricGraphConfig: FunctionComponent<ComponentProps> = (
     legendUnit: undefined,
   };
 
-  // Compute active attribute count for the header summary
-  const attributes: Dictionary<string | number | boolean> | undefined = (
+  /*
+   * Compute active attribute count for the header summary.
+   * Empty key or empty value entries are ignored — they aren't applied as
+   * filters and shouldn't appear in the "Filtered by:" chips either.
+   */
+  const rawAttributes: Dictionary<string | number | boolean> | undefined = (
     props.data?.metricQueryData?.filterData as Record<string, unknown>
   )?.["attributes"] as Dictionary<string | number | boolean> | undefined;
+
+  const attributes: Dictionary<string | number | boolean> | undefined = (() => {
+    if (!rawAttributes) {
+      return undefined;
+    }
+    const filtered: Dictionary<string | number | boolean> = {};
+    for (const [key, value] of Object.entries(rawAttributes)) {
+      if (
+        key.trim() !== "" &&
+        value !== undefined &&
+        value !== null &&
+        String(value).trim() !== ""
+      ) {
+        filtered[key] = value;
+      }
+    }
+    return filtered;
+  })();
 
   const activeAttributeCount: number = attributes
     ? Object.keys(attributes).length
@@ -321,6 +344,7 @@ const MetricGraphConfig: FunctionComponent<ComponentProps> = (
                 isAttributesLoading={props.attributesLoading}
                 attributesError={props.attributesError}
                 onAttributesRetry={props.onAttributesRetry}
+                loadingAttributeValueKeys={props.loadingAttributeValueKeys}
               />
             )}
 

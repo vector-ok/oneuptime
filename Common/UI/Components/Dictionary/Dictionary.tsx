@@ -30,6 +30,8 @@ export interface ComponentProps {
   keys?: Array<string> | undefined;
   valueSuggestions?: Record<string, Array<string>> | undefined;
   onKeySelected?: ((key: string) => void) | undefined;
+  isLoadingKeys?: boolean | undefined;
+  loadingValueKeys?: Array<string> | undefined;
 }
 
 interface Item {
@@ -157,6 +159,8 @@ const DictionaryForm: FunctionComponent<ComponentProps> = (
                   value={item.key}
                   placeholder={props.keyPlaceholder}
                   suggestions={props.keys}
+                  isLoadingSuggestions={props.isLoadingKeys}
+                  loadingMessage="Loading attributes..."
                   onChange={(value: string) => {
                     const newData: Array<Item> = [...data];
                     newData[index]!.key = value;
@@ -227,6 +231,10 @@ const DictionaryForm: FunctionComponent<ComponentProps> = (
                         ? props.valueSuggestions[item.key]
                         : undefined
                     }
+                    isLoadingSuggestions={Boolean(
+                      item.key && props.loadingValueKeys?.includes(item.key),
+                    )}
+                    loadingMessage="Loading values..."
                     onChange={(value: string) => {
                       const newData: Array<Item> = [...data];
                       newData[index]!.value = value;
