@@ -15,6 +15,7 @@ import AnalyticsTableColumn, {
   SkipIndexType,
 } from "../../../Types/AnalyticsDatabase/TableColumn";
 import TableColumnType from "../../../Types/AnalyticsDatabase/TableColumnType";
+import EqualTo from "../../../Types/BaseDatabase/EqualTo";
 import GreaterThan from "../../../Types/BaseDatabase/GreaterThan";
 import GreaterThanOrEqual from "../../../Types/BaseDatabase/GreaterThanOrEqual";
 import InBetween from "../../../Types/BaseDatabase/InBetween";
@@ -25,7 +26,11 @@ import LessThanOrEqual from "../../../Types/BaseDatabase/LessThanOrEqual";
 import GreaterThanOrNull from "../../../Types/BaseDatabase/GreaterThanOrNull";
 import LessThanOrNull from "../../../Types/BaseDatabase/LessThanOrNull";
 import NotEqual from "../../../Types/BaseDatabase/NotEqual";
+import NotContains from "../../../Types/BaseDatabase/NotContains";
+import NotNull from "../../../Types/BaseDatabase/NotNull";
 import Search from "../../../Types/BaseDatabase/Search";
+import StartsWith from "../../../Types/BaseDatabase/StartsWith";
+import EndsWith from "../../../Types/BaseDatabase/EndsWith";
 import SortOrder from "../../../Types/BaseDatabase/SortOrder";
 import OneUptimeDate from "../../../Types/Date";
 import BadDataException from "../../../Types/Exception/BadDataException";
@@ -447,33 +452,195 @@ export default class StatementGenerator<TBaseModel extends AnalyticsBaseModel> {
         tableColumn.type === TableColumnType.MapStringString &&
         typeof value === "object"
       ) {
-        const mapValue: Record<string, string | Search<string>> =
-          value as Record<string, string | Search<string>>;
+        const mapValue: Record<string, unknown> = value as Record<
+          string,
+          unknown
+        >;
         for (const mapKey in mapValue) {
-          if (mapValue[mapKey] === undefined) {
+          const mapEntry: unknown = mapValue[mapKey];
+          if (mapEntry === undefined || mapEntry === null) {
             continue;
           }
-          if (mapValue[mapKey] instanceof Search) {
+
+          /*
+           * ClickHouse Map columns return the value type's default for
+           * missing keys (empty string for String values), so to express
+           * "is empty" we have to cover both the missing-key and the
+           * empty-string case explicitly.
+           */
+          if (mapEntry instanceof IsNull) {
+            whereStatement.append(
+              SQL`AND ((NOT mapContains(${key}, ${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }})) OR ${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}] = '')`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof NotNull) {
+            whereStatement.append(
+              SQL`AND mapContains(${key}, ${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}) AND ${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}] != ''`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof Search) {
             whereStatement.append(
               SQL`AND ${key}[${{
                 value: mapKey,
                 type: TableColumnType.Text,
               }}] ILIKE ${{
-                value: mapValue[mapKey] as Search<string>,
+                value: mapEntry as Search<string>,
                 type: TableColumnType.Text,
               }}`,
             );
-          } else {
+            continue;
+          }
+
+          if (mapEntry instanceof NotContains) {
+            const literalValue: string = `%${(mapEntry.value as string) || ""}%`;
+            whereStatement.append(
+              SQL`AND ${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}] NOT ILIKE ${{
+                value: literalValue,
+                type: TableColumnType.Text,
+              }}`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof StartsWith) {
+            const literalValue: string = `${(mapEntry.value as string) || ""}%`;
+            whereStatement.append(
+              SQL`AND ${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}] ILIKE ${{
+                value: literalValue,
+                type: TableColumnType.Text,
+              }}`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof EndsWith) {
+            const literalValue: string = `%${(mapEntry.value as string) || ""}`;
+            whereStatement.append(
+              SQL`AND ${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}] ILIKE ${{
+                value: literalValue,
+                type: TableColumnType.Text,
+              }}`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof NotEqual) {
+            whereStatement.append(
+              SQL`AND ${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}] != ${{
+                value: String((mapEntry as NotEqual<string>).value ?? ""),
+                type: TableColumnType.Text,
+              }}`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof EqualTo) {
             whereStatement.append(
               SQL`AND ${key}[${{
                 value: mapKey,
                 type: TableColumnType.Text,
               }}] = ${{
-                value: mapValue[mapKey] as string,
+                value: String((mapEntry as EqualTo<any>).value ?? ""),
                 type: TableColumnType.Text,
               }}`,
             );
+            continue;
           }
+
+          /*
+           * Map values are stored as text; cast to Float64 for numeric
+           * comparisons and skip rows where the cast fails (non-numeric).
+           */
+          if (mapEntry instanceof GreaterThan) {
+            whereStatement.append(
+              SQL`AND toFloat64OrNull(${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}]) > ${{
+                value: Number((mapEntry as GreaterThan<any>).value),
+                type: TableColumnType.Number,
+              }}`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof GreaterThanOrEqual) {
+            whereStatement.append(
+              SQL`AND toFloat64OrNull(${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}]) >= ${{
+                value: Number((mapEntry as GreaterThanOrEqual<any>).value),
+                type: TableColumnType.Number,
+              }}`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof LessThan) {
+            whereStatement.append(
+              SQL`AND toFloat64OrNull(${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}]) < ${{
+                value: Number((mapEntry as LessThan<any>).value),
+                type: TableColumnType.Number,
+              }}`,
+            );
+            continue;
+          }
+
+          if (mapEntry instanceof LessThanOrEqual) {
+            whereStatement.append(
+              SQL`AND toFloat64OrNull(${key}[${{
+                value: mapKey,
+                type: TableColumnType.Text,
+              }}]) <= ${{
+                value: Number((mapEntry as LessThanOrEqual<any>).value),
+                type: TableColumnType.Number,
+              }}`,
+            );
+            continue;
+          }
+
+          // Bare string/number/boolean — back-compat with existing data.
+          whereStatement.append(
+            SQL`AND ${key}[${{
+              value: mapKey,
+              type: TableColumnType.Text,
+            }}] = ${{
+              value: String(mapEntry),
+              type: TableColumnType.Text,
+            }}`,
+          );
         }
       } else if (
         (tableColumn.type === TableColumnType.JSON ||

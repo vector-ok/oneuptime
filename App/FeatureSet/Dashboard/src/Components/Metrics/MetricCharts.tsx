@@ -44,6 +44,12 @@ import Navigation from "Common/UI/Utils/Navigation";
 import RouteMap, { RouteUtil } from "../../Utils/RouteMap";
 import PageMap from "../../Utils/PageMap";
 import Route from "Common/Types/API/Route";
+import {
+  DictionaryFilterOperator,
+  DictionaryFilterOperatorOption,
+  detectOperatorFromValue,
+  getOperatorOption,
+} from "Common/UI/Components/Dictionary/DictionaryFilterOperator";
 
 export interface ComponentProps {
   metricViewData: MetricViewData;
@@ -611,27 +617,34 @@ const MetricCharts: FunctionComponent<ComponentProps> = (
 
       /*
        * Build metric info for the info icon modal.
-       * Skip empty key/value entries — they aren't applied as filters.
+       * Skip empty key/value entries and surface the operator alongside
+       * the value so users can see what's actually filtered.
        */
       const metricAttributes: Dictionary<string> = {};
-      const filterAttributes:
-        | Dictionary<string | boolean | number>
-        | undefined = queryConfig.metricQueryData.filterData.attributes as
-        | Dictionary<string | boolean | number>
+      const filterAttributes: Dictionary<unknown> | undefined = queryConfig
+        .metricQueryData.filterData.attributes as
+        | Dictionary<unknown>
         | undefined;
 
       if (filterAttributes) {
         for (const key of Object.keys(filterAttributes)) {
-          const value: string | boolean | number | undefined =
-            filterAttributes[key];
-          if (
-            key.trim() !== "" &&
-            value !== undefined &&
-            value !== null &&
-            String(value).trim() !== ""
-          ) {
-            metricAttributes[key] = String(value);
+          const value: unknown = filterAttributes[key];
+          if (key.trim() === "" || value === undefined || value === null) {
+            continue;
           }
+          const detected: {
+            operator: DictionaryFilterOperator;
+            rawValue: string;
+          } = detectOperatorFromValue(value);
+          const option: DictionaryFilterOperatorOption = getOperatorOption(
+            detected.operator,
+          );
+          if (!option.hidesValueInput && detected.rawValue.trim() === "") {
+            continue;
+          }
+          metricAttributes[key] = option.hidesValueInput
+            ? option.symbol
+            : `${option.symbol} ${detected.rawValue}`;
         }
       }
 

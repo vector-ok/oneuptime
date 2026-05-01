@@ -165,6 +165,7 @@ const TraceMonitorStepForm: FunctionComponent<ComponentProps> = (
             dictionaryValueSuggestions: props.attributeValueSuggestions,
             loadingDictionaryValueKeys: props.loadingAttributeValueKeys,
             onDictionaryKeySelected: props.onAttributeKeySelected,
+            dictionaryEnableOperators: true,
             description:
               "You can filter the Traces based on the attributes that are attached to the Traces.",
             hideOptionalLabel: true,

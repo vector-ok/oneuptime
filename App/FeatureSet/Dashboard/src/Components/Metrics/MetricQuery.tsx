@@ -117,6 +117,7 @@ const MetricFilter: FunctionComponent<ComponentProps> = (
               onJsonKeySelected: props.onAttributeKeySelected,
               isLoadingJsonKeys: props.isAttributesLoading,
               loadingJsonValueKeys: props.loadingAttributeValueKeys,
+              jsonEnableOperators: true,
               isAdvancedFilter: true,
             },
           ]}

@@ -166,6 +166,7 @@ const LogMonitorStepForm: FunctionComponent<ComponentProps> = (
             dictionaryValueSuggestions: props.attributeValueSuggestions,
             loadingDictionaryValueKeys: props.loadingAttributeValueKeys,
             onDictionaryKeySelected: props.onAttributeKeySelected,
+            dictionaryEnableOperators: true,
             description:
               "You can filter the logs based on the attributes that are attached to the logs.",
             hideOptionalLabel: true,

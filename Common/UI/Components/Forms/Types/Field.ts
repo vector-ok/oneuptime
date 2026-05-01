@@ -126,6 +126,7 @@ export default interface Field<TEntity> {
   dictionaryValueSuggestions?: Record<string, Array<string>> | undefined;
   loadingDictionaryValueKeys?: Array<string> | undefined;
   onDictionaryKeySelected?: ((key: string) => void) | undefined;
+  dictionaryEnableOperators?: boolean | undefined;
 
   hideOptionalLabel?: boolean | undefined;
 

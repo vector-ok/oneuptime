@@ -24,27 +24,40 @@ import MetricFormulaConfigData from "Common/Types/Metrics/MetricFormulaConfigDat
 import MetricFormulaEvaluator from "Common/Utils/Metrics/MetricFormulaEvaluator";
 import MetricResultUnitConverter from "Common/Utils/Metrics/MetricResultUnitConverter";
 import Dictionary from "Common/Types/Dictionary";
+import {
+  DictionaryEntryValue,
+  DictionaryFilterOperator,
+  DictionaryFilterOperatorOption,
+  detectOperatorFromValue,
+  getOperatorOption,
+} from "Common/UI/Components/Dictionary/DictionaryFilterOperator";
 
 type SanitizeAttributeFiltersFunction = (
-  attributes: Dictionary<string | number | boolean> | undefined,
-) => Dictionary<string | number | boolean> | undefined;
+  attributes: Dictionary<DictionaryEntryValue> | undefined,
+) => Dictionary<DictionaryEntryValue> | undefined;
 
 export const sanitizeAttributeFilters: SanitizeAttributeFiltersFunction = (
-  attributes: Dictionary<string | number | boolean> | undefined,
-): Dictionary<string | number | boolean> | undefined => {
+  attributes: Dictionary<DictionaryEntryValue> | undefined,
+): Dictionary<DictionaryEntryValue> | undefined => {
   if (!attributes) {
     return undefined;
   }
-  const result: Dictionary<string | number | boolean> = {};
+  const result: Dictionary<DictionaryEntryValue> = {};
   for (const [key, value] of Object.entries(attributes)) {
-    if (
-      key.trim() !== "" &&
-      value !== undefined &&
-      value !== null &&
-      String(value).trim() !== ""
-    ) {
-      result[key] = value;
+    if (key.trim() === "" || value === undefined || value === null) {
+      continue;
     }
+    const detected: {
+      operator: DictionaryFilterOperator;
+      rawValue: string;
+    } = detectOperatorFromValue(value);
+    const option: DictionaryFilterOperatorOption = getOperatorOption(
+      detected.operator,
+    );
+    if (!option.hidesValueInput && detected.rawValue.trim() === "") {
+      continue;
+    }
+    result[key] = value;
   }
   return Object.keys(result).length > 0 ? result : undefined;
 };
@@ -95,7 +108,7 @@ export default class MetricUtil {
               name: queryConfig.metricQueryData.filterData.metricName!,
               attributes: sanitizeAttributeFilters(
                 queryConfig.metricQueryData.filterData.attributes as
-                  | Dictionary<string | number | boolean>
+                  | Dictionary<DictionaryEntryValue>
                   | undefined,
               ) as any,
             },

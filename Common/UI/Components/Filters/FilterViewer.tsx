@@ -1,3 +1,9 @@
+import {
+  DictionaryFilterOperator,
+  DictionaryFilterOperatorOption,
+  detectOperatorFromValue,
+  getOperatorOption,
+} from "../Dictionary/DictionaryFilterOperator";
 import Icon, { SizeProp } from "../Icon/Icon";
 import Includes from "../../../Types/BaseDatabase/Includes";
 import IncludesAll from "../../../Types/BaseDatabase/IncludesAll";
@@ -81,33 +87,50 @@ const FilterComponent: FilterComponentFunction = <T extends GenericObject>(
   const formatJson: FormatJsonFunction = (
     json: Dictionary<string | number | boolean>,
   ): ReactElement => {
-    // Ignore entries with empty key or empty value — they aren't real filters.
+    /*
+     * Ignore entries with empty key or empty value, and translate
+     * operator wrappers into their display symbol so chips like
+     * `host.name != prod-1` or `path contains api` render correctly.
+     */
+    const isMeaningfulEntry: (key: string, value: unknown) => boolean = (
+      key: string,
+      value: unknown,
+    ): boolean => {
+      if (key.trim() === "" || value === undefined || value === null) {
+        return false;
+      }
+      const detected: { operator: DictionaryFilterOperator; rawValue: string } =
+        detectOperatorFromValue(value);
+      const option: DictionaryFilterOperatorOption = getOperatorOption(
+        detected.operator,
+      );
+      if (option.hidesValueInput) {
+        return true;
+      }
+      return detected.rawValue.trim() !== "";
+    };
+
     const visibleKeys: Array<string> = Object.keys(json).filter(
       (key: string) => {
-        const value: string | number | boolean | undefined = json[key];
-        return (
-          key.trim() !== "" &&
-          value !== undefined &&
-          value !== null &&
-          String(value).trim() !== ""
-        );
+        return isMeaningfulEntry(key, json[key]);
       },
     );
 
     return (
       <div className="flex space-x-2 -mt-1">
         {visibleKeys.map((key: string, i: number) => {
-          let jsonText: string | number | boolean = json[key] as
-            | string
-            | number
-            | boolean;
+          const rawValue: unknown = json[key];
+          const detected: {
+            operator: DictionaryFilterOperator;
+            rawValue: string;
+          } = detectOperatorFromValue(rawValue);
+          const option: DictionaryFilterOperatorOption = getOperatorOption(
+            detected.operator,
+          );
 
-          if (typeof jsonText === "boolean" && jsonText === true) {
-            jsonText = "True";
-          }
-
-          if (typeof jsonText === "boolean" && jsonText === false) {
-            jsonText = "False";
+          let jsonText: string = detected.rawValue;
+          if (typeof rawValue === "boolean") {
+            jsonText = rawValue ? "True" : "False";
           }
 
           return (
@@ -115,8 +138,14 @@ const FilterComponent: FilterComponentFunction = <T extends GenericObject>(
               key={i}
               className="rounded-full h-7 bg-gray-100 text-gray-500 border-2 border-gray-200 p-1 pr-2 pl-2 text-xs"
             >
-              <span className="font-medium">{key}</span> ={" "}
-              <span className="font-medium">{jsonText}</span>
+              <span className="font-medium">{key}</span>{" "}
+              <span>{option.symbol}</span>
+              {!option.hidesValueInput && (
+                <>
+                  {" "}
+                  <span className="font-medium">{jsonText}</span>
+                </>
+              )}
             </div>
           );
         })}
@@ -347,16 +376,28 @@ const FilterComponent: FilterComponentFunction = <T extends GenericObject>(
         key
       ] as Dictionary<string | number | boolean>;
 
-      // Count only non-empty entries — empty key/value pairs aren't real filters.
+      /*
+       * Count only meaningful entries — empty key/value pairs aren't
+       * real filters, and value-less operators (IsEmpty/IsNotEmpty) are
+       * valid even with no value.
+       */
       const nonEmptyEntryCount: number = Object.keys(json).filter(
         (entryKey: string) => {
-          const value: string | number | boolean | undefined = json[entryKey];
-          return (
-            entryKey.trim() !== "" &&
-            value !== undefined &&
-            value !== null &&
-            String(value).trim() !== ""
+          const value: unknown = json[entryKey];
+          if (entryKey.trim() === "" || value === undefined || value === null) {
+            return false;
+          }
+          const detected: {
+            operator: DictionaryFilterOperator;
+            rawValue: string;
+          } = detectOperatorFromValue(value);
+          const option: DictionaryFilterOperatorOption = getOperatorOption(
+            detected.operator,
           );
+          if (option.hidesValueInput) {
+            return true;
+          }
+          return detected.rawValue.trim() !== "";
         },
       ).length;
 
