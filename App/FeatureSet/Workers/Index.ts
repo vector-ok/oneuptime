@@ -167,6 +167,10 @@ import Queue, { QueueJob, QueueName } from "Common/Server/Infrastructure/Queue";
 import QueueWorker from "Common/Server/Infrastructure/QueueWorker";
 import FeatureSet from "Common/Server/Types/FeatureSet";
 import logger from "Common/Server/Utils/Logger";
+import {
+  EnableQueueDashboard,
+  QueueDashboardSecret,
+} from "Common/Server/EnvironmentConfig";
 import { WORKER_CONCURRENCY } from "./Config";
 import MetricsAPI from "./API/Metrics";
 
@@ -177,8 +181,16 @@ const app: ExpressApplication = Express.getExpressApp();
 const WorkersFeatureSet: FeatureSet = {
   init: async (): Promise<void> => {
     try {
-      // attach bull board to the app
-      app.use(Queue.getInspectorRoute(), Queue.getQueueInspectorRouter());
+      // attach bull board to the app, gated behind ENABLE_QUEUE_DASHBOARD
+      if (EnableQueueDashboard) {
+        if (!QueueDashboardSecret) {
+          logger.warn(
+            "ENABLE_QUEUE_DASHBOARD is true but QUEUE_DASHBOARD_SECRET is empty. Queue dashboard will not be mounted.",
+          );
+        } else {
+          app.use(Queue.getInspectorRoute(), Queue.getQueueInspectorRouter());
+        }
+      }
 
       // expose metrics endpoint used by KEDA
       app.use(["/worker", "/"], MetricsAPI);

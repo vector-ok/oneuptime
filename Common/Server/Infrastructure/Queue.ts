@@ -1,4 +1,4 @@
-import { ClusterKey } from "../EnvironmentConfig";
+import { QueueDashboardSecret } from "../EnvironmentConfig";
 import Dictionary from "../../Types/Dictionary";
 import { JSONObject } from "../../Types/JSON";
 import { Queue as BullQueue, Job, JobsOptions, RepeatableJob } from "bullmq";
@@ -153,7 +153,7 @@ export default class Queue {
 
   @CaptureSpan()
   public static getInspectorRoute(): string {
-    return "/worker/inspect/queue/:clusterKey";
+    return "/worker/inspect/queue/:dashboardSecret";
   }
 
   @CaptureSpan()
@@ -174,8 +174,8 @@ export default class Queue {
 
     serverAdapter.setBasePath(
       this.getInspectorRoute().replace(
-        "/:clusterKey",
-        "/" + ClusterKey.toString(),
+        "/:dashboardSecret",
+        "/" + QueueDashboardSecret,
       ),
     );
 
