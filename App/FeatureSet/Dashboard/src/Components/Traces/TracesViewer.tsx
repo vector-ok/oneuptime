@@ -220,9 +220,12 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
   const [telemetryAttributes, setTelemetryAttributes] = useState<Array<string>>(
     [],
   );
+  const [attributesLoading, setAttributesLoading] = useState<boolean>(false);
   const [attributeValueSuggestions, setAttributeValueSuggestions] = useState<
     Record<string, Array<string>>
   >({});
+  const [attributeValuesLoading, setAttributeValuesLoading] =
+    useState<boolean>(false);
   const lastValueSuggestionKeyRef: React.MutableRefObject<string> =
     useRef<string>("");
 
@@ -302,7 +305,18 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
 
     // Apply active facet filters
     const facetGroups: Record<string, Array<string>> = {};
+    const attributeChips: Record<string, string> = {};
     for (const filter of activeFilters) {
+      /*
+       * Chips with the `attributes.` prefix are telemetry attribute filters
+       * (added when a user types `@key:value` in the search bar). Route them
+       * into `query.attributes` rather than as top-level columns.
+       */
+      if (filter.facetKey.startsWith("attributes.")) {
+        const attrKey: string = filter.facetKey.substring("attributes.".length);
+        attributeChips[attrKey] = filter.value;
+        continue;
+      }
       if (!facetGroups[filter.facetKey]) {
         facetGroups[filter.facetKey] = [];
       }
@@ -384,9 +398,13 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
       }
     }
 
-    // Apply attribute filters (@attribute:value)
-    if (Object.keys(attributes).length > 0) {
-      (query as Record<string, unknown>)["attributes"] = attributes;
+    // Apply attribute filters (@attribute:value) — merge chip + search sources
+    const mergedAttributes: Record<string, string> = {
+      ...attributeChips,
+      ...attributes,
+    };
+    if (Object.keys(mergedAttributes).length > 0) {
+      (query as Record<string, unknown>)["attributes"] = mergedAttributes;
     }
 
     return query;
@@ -436,6 +454,7 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
   useEffect(() => {
     const loadAttributes: () => Promise<void> = async () => {
       try {
+        setAttributesLoading(true);
         const response: HTTPResponse<JSONObject> | HTTPErrorResponse =
           await API.post({
             url: URL.fromString(APP_API_URL.toString()).addRoute(
@@ -454,6 +473,8 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
         );
       } catch {
         // non-critical
+      } finally {
+        setAttributesLoading(false);
       }
     };
     void loadAttributes();
@@ -479,6 +500,7 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
 
     const loadValues: () => Promise<void> = async () => {
       try {
+        setAttributeValuesLoading(true);
         const response: HTTPResponse<JSONObject> | HTTPErrorResponse =
           await API.post({
             url: URL.fromString(APP_API_URL.toString()).addRoute(
@@ -503,6 +525,8 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
         );
       } catch {
         // non-critical
+      } finally {
+        setAttributeValuesLoading(false);
       }
     };
     void loadValues();
@@ -556,7 +580,14 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
 
     // Collect filter values from both active facet filters and parsed search
     const groups: Record<string, Array<string>> = {};
+    const attributeChips: Record<string, string> = {};
     for (const filter of activeFilters) {
+      // `attributes.<key>` chips route into `payload.attributes`, not `groups`.
+      if (filter.facetKey.startsWith("attributes.")) {
+        const attrKey: string = filter.facetKey.substring("attributes.".length);
+        attributeChips[attrKey] = filter.value;
+        continue;
+      }
       if (!groups[filter.facetKey]) {
         groups[filter.facetKey] = [];
       }
@@ -571,9 +602,13 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
       groups[key]!.push(...fieldFilters[key]!);
     }
 
-    // Pass attribute filters to aggregation
-    if (Object.keys(attributes).length > 0) {
-      payload["attributes"] = attributes;
+    // Pass attribute filters (chip + parsed) to aggregation
+    const mergedAttributes: Record<string, string> = {
+      ...attributeChips,
+      ...attributes,
+    };
+    if (Object.keys(mergedAttributes).length > 0) {
+      payload["attributes"] = mergedAttributes;
     }
 
     // Scope by serviceId prop if present
@@ -845,7 +880,10 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
               return c.key === facetKey;
             },
           );
-          const displayKey: string = config?.title || facetKey;
+          // Attribute chips (`attributes.<key>`) display as just `<key>`.
+          const displayKey: string = facetKey.startsWith("attributes.")
+            ? facetKey.substring("attributes.".length)
+            : config?.title || facetKey;
           const displayValue: string =
             config?.valueDisplayMap?.[value] || value;
           return [...prev, { facetKey, value, displayKey, displayValue }];
@@ -956,14 +994,22 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
       ]}
       searchAttributeSuggestions={telemetryAttributes}
       searchValueSuggestions={attributeValueSuggestions}
+      searchAttributesLoading={attributesLoading}
+      searchValuesLoading={attributeValuesLoading}
       onSearchFieldValueSelect={(fieldKey: string, value: string) => {
+        /*
+         * Add the typed pair as a chip via the same path as facet clicks so
+         * it lives in `activeFilters` and feels consistent with the rest of
+         * the UI. Known fields use their alias (e.g. "service" →
+         * "serviceId"); unknown keys are telemetry attributes and get an
+         * `attributes.` prefix so they're routed into `query.attributes`
+         * during query construction.
+         */
         const isKnownField: boolean = KNOWN_FIELD_KEYS.has(fieldKey);
-        const newSearch: string = isKnownField
-          ? `${fieldKey}:${value}`
-          : `@${fieldKey}:${value}`;
-        setSearchValue(newSearch);
-        setSubmittedSearch(newSearch);
-        setPage(1);
+        const facetKey: string = isKnownField
+          ? FIELD_ALIAS_MAP[fieldKey] || fieldKey
+          : `attributes.${fieldKey}`;
+        handleFacetInclude(facetKey, value);
       }}
       searchFieldAliasMap={FIELD_ALIAS_MAP}
       searchHelpRows={SEARCH_HELP_ROWS}

@@ -51,6 +51,8 @@ export interface TelemetryViewerProps<T> {
   searchHelpRows?: Array<SearchHelpRow> | undefined;
   searchHelpCombinedExample?: string | undefined;
   searchBarRef?: React.Ref<TelemetrySearchBarRef> | undefined;
+  searchAttributesLoading?: boolean | undefined;
+  searchValuesLoading?: boolean | undefined;
 
   // -- Toolbar: time --
   timeRange: RangeStartAndEndDateTime;
@@ -125,6 +127,8 @@ function TelemetryViewerInner<T>(props: TelemetryViewerProps<T>): ReactElement {
             onFieldValueSelect={props.onSearchFieldValueSelect}
             helpRows={props.searchHelpRows}
             helpCombinedExample={props.searchHelpCombinedExample}
+            isAttributesLoading={props.searchAttributesLoading}
+            isValuesLoading={props.searchValuesLoading}
           />
         </div>
 

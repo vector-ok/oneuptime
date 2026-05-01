@@ -39,6 +39,10 @@ export interface TelemetrySearchBarProps {
   // Rows rendered in the help popover when the bar is empty + focused.
   helpRows?: Array<SearchHelpRow> | undefined;
   helpCombinedExample?: string | undefined;
+  // Loading state for `@attribute` autocomplete (initial fetch of keys).
+  isAttributesLoading?: boolean | undefined;
+  // Loading state for `@attribute:value` autocomplete (per-key value fetch).
+  isValuesLoading?: boolean | undefined;
 }
 
 export interface TelemetrySearchBarRef {
@@ -116,10 +120,22 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
           return s.toLowerCase().startsWith(normalizedWord.toLowerCase());
         });
 
+    /*
+     * Show a loader inside the dropdown while the parent is fetching:
+     *   - attribute keys: `@` was just typed but the keys haven't arrived
+     *   - attribute values: `@key:` was typed but values for that key
+     *     haven't arrived yet
+     */
+    const isLoadingForCurrentMode: boolean = isValueMode
+      ? Boolean(props.isValuesLoading)
+      : hasAtPrefix
+        ? Boolean(props.isAttributesLoading)
+        : false;
+
     const shouldShowSuggestions: boolean =
       showSuggestions &&
       isFocused &&
-      filteredSuggestions.length > 0 &&
+      (filteredSuggestions.length > 0 || isLoadingForCurrentMode) &&
       (isValueMode ? true : currentWord.length > 0);
 
     const shouldShowHelp: boolean =
@@ -140,6 +156,7 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
           if (e.key === "Enter") {
             if (
               shouldShowSuggestions &&
+              !isLoadingForCurrentMode &&
               selectedSuggestionIndex >= 0 &&
               selectedSuggestionIndex < filteredSuggestions.length
             ) {
@@ -153,6 +170,11 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
               partialValue.length > 0 &&
               props.onFieldValueSelect
             ) {
+              /*
+               * Prefer a match from the suggestion list (so casing matches
+               * what's actually in the data); otherwise accept the typed
+               * value as-is so users aren't blocked when no suggestion exists.
+               */
               const resolvedField: string =
                 fieldAliasMap[fieldPrefix] || fieldPrefix;
               const availableValues: Array<string> =
@@ -164,23 +186,21 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
                 },
               );
 
-              const resolvedMatch: string | undefined =
+              const resolvedMatch: string =
                 exactMatch ||
                 (filteredSuggestions.length === 1
-                  ? filteredSuggestions[0]
-                  : undefined);
+                  ? filteredSuggestions[0]!
+                  : partialValue);
 
-              if (resolvedMatch) {
-                props.onFieldValueSelect(fieldPrefix, resolvedMatch);
-                const parts: Array<string> = props.value.split(/\s+/);
-                parts.pop();
-                const remaining: string = parts.join(" ");
-                props.onChange(remaining ? remaining + " " : "");
-                setShowSuggestions(false);
-                setShowHelp(false);
-                e.preventDefault();
-                return;
-              }
+              props.onFieldValueSelect(fieldPrefix, resolvedMatch);
+              const parts: Array<string> = props.value.split(/\s+/);
+              parts.pop();
+              const remaining: string = parts.join(" ");
+              props.onChange(remaining ? remaining + " " : "");
+              setShowSuggestions(false);
+              setShowHelp(false);
+              e.preventDefault();
+              return;
             }
 
             props.onSubmit();
@@ -195,7 +215,7 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
             return;
           }
 
-          if (!shouldShowSuggestions) {
+          if (!shouldShowSuggestions || isLoadingForCurrentMode) {
             return;
           }
 
@@ -223,6 +243,7 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
           partialValue,
           props,
           fieldAliasMap,
+          isLoadingForCurrentMode,
         ],
       );
 
@@ -291,6 +312,17 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
       };
     }, []);
 
+    const loadingMessage: string = isValueMode
+      ? `Loading values for ${fieldPrefix}...`
+      : "Loading attributes...";
+
+    const emptyMessage: string | undefined =
+      isValueMode &&
+      !isLoadingForCurrentMode &&
+      filteredSuggestions.length === 0
+        ? `No matching values — press Enter to filter by "${partialValue}"`
+        : undefined;
+
     return (
       <div ref={containerRef} className="relative">
         <div
@@ -353,6 +385,9 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
             onSelect={applySuggestion}
             fieldContext={isValueMode ? fieldPrefix : undefined}
             isAttributeMode={hasAtPrefix}
+            isLoading={isLoadingForCurrentMode}
+            loadingMessage={loadingMessage}
+            emptyMessage={emptyMessage}
           />
         )}
 

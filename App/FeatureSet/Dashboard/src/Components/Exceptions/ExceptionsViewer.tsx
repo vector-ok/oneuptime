@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import TelemetryViewer from "Common/UI/Components/TelemetryViewer/TelemetryViewer";
@@ -133,6 +134,14 @@ const ExceptionsViewer: FunctionComponent<ExceptionsViewerProps> = (
   const [telemetryAttributes, setTelemetryAttributes] = useState<Array<string>>(
     [],
   );
+  const [attributesLoading, setAttributesLoading] = useState<boolean>(false);
+  const [attributeValueSuggestions, setAttributeValueSuggestions] = useState<
+    Record<string, Array<string>>
+  >({});
+  const [attributeValuesLoading, setAttributeValuesLoading] =
+    useState<boolean>(false);
+  const lastValueSuggestionKeyRef: React.MutableRefObject<string> =
+    useRef<string>("");
 
   const [timeRange, setTimeRange] = useState<RangeStartAndEndDateTime>({
     range: TimeRange.PAST_ONE_DAY,
@@ -169,6 +178,7 @@ const ExceptionsViewer: FunctionComponent<ExceptionsViewerProps> = (
   useEffect(() => {
     const loadAttributes: () => Promise<void> = async () => {
       try {
+        setAttributesLoading(true);
         const response: HTTPResponse<JSONObject> | HTTPErrorResponse =
           await API.post({
             url: URL.fromString(APP_API_URL.toString()).addRoute(
@@ -185,10 +195,61 @@ const ExceptionsViewer: FunctionComponent<ExceptionsViewerProps> = (
         );
       } catch {
         // non-critical
+      } finally {
+        setAttributesLoading(false);
       }
     };
     void loadAttributes();
   }, []);
+
+  /*
+   * Lazily fetch values for the attribute the user is currently typing
+   * (e.g. `@service:`) so the dropdown can populate suggestions.
+   */
+  useEffect(() => {
+    const currentWord: string = (searchValue.split(/\s+/).pop() || "").trim();
+    if (!currentWord.startsWith("@") || !currentWord.includes(":")) {
+      return;
+    }
+    const colonIdx: number = currentWord.indexOf(":");
+    const attrKey: string = currentWord.substring(1, colonIdx);
+
+    if (!attrKey || attrKey === lastValueSuggestionKeyRef.current) {
+      return;
+    }
+    lastValueSuggestionKeyRef.current = attrKey;
+
+    const loadValues: () => Promise<void> = async () => {
+      try {
+        setAttributeValuesLoading(true);
+        const response: HTTPResponse<JSONObject> | HTTPErrorResponse =
+          await API.post({
+            url: URL.fromString(APP_API_URL.toString()).addRoute(
+              "/telemetry/exceptions/get-attribute-values",
+            ),
+            data: { attributeKey: attrKey },
+            headers: ModelAPI.getCommonHeaders(),
+          });
+        if (response instanceof HTTPErrorResponse) {
+          throw response;
+        }
+        const values: Array<string> = (response.data["values"] ||
+          []) as Array<string>;
+        setAttributeValueSuggestions(
+          (
+            prev: Record<string, Array<string>>,
+          ): Record<string, Array<string>> => {
+            return { ...prev, [attrKey]: values };
+          },
+        );
+      } catch {
+        // non-critical
+      } finally {
+        setAttributeValuesLoading(false);
+      }
+    };
+    void loadValues();
+  }, [searchValue]);
 
   const serviceById: Record<string, Service> = useMemo(() => {
     const map: Record<string, Service> = {};
@@ -709,6 +770,28 @@ const ExceptionsViewer: FunctionComponent<ExceptionsViewerProps> = (
           return attr !== "type" && attr !== "service" && attr !== "env";
         }),
       ]}
+      searchValueSuggestions={attributeValueSuggestions}
+      searchAttributesLoading={attributesLoading}
+      searchValuesLoading={attributeValuesLoading}
+      onSearchFieldValueSelect={(fieldKey: string, value: string) => {
+        /*
+         * Known fields (type/service/env) become chips via their canonical
+         * column name (e.g. `type` → `exceptionType`) so they filter
+         * correctly. The TelemetryException model has no JSON attributes
+         * column, so unknown keys go back through the search string path
+         * — preserving the previous behavior rather than silently breaking
+         * the filter.
+         */
+        const aliased: string | undefined = FIELD_ALIAS_MAP[fieldKey];
+        if (aliased) {
+          handleFacetInclude(aliased, value);
+          return;
+        }
+        const newSearch: string = `@${fieldKey}:${value}`;
+        setSearchValue(newSearch);
+        setSubmittedSearch(newSearch);
+        setPage(1);
+      }}
       searchFieldAliasMap={FIELD_ALIAS_MAP}
       searchHelpRows={SEARCH_HELP_ROWS}
       searchHelpCombinedExample="@service:api @env:production TypeError"

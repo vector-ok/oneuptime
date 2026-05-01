@@ -105,11 +105,14 @@ const MetricsViewer: FunctionComponent<Props> = (
   const [telemetryAttributes, setTelemetryAttributes] = useState<Array<string>>(
     [],
   );
+  const [attributesLoading, setAttributesLoading] = useState<boolean>(false);
 
   // Attribute value suggestions: attributeKey -> Array<value>
   const [attributeValueSuggestions, setAttributeValueSuggestions] = useState<
     Record<string, Array<string>>
   >({});
+  const [attributeValuesLoading, setAttributeValuesLoading] =
+    useState<boolean>(false);
   const lastValueSuggestionKeyRef: React.MutableRefObject<string> =
     useRef<string>("");
 
@@ -160,10 +163,13 @@ const MetricsViewer: FunctionComponent<Props> = (
   useEffect(() => {
     const loadAttributes: () => Promise<void> = async () => {
       try {
+        setAttributesLoading(true);
         const attrs: Array<string> = await MetricUtil.getTelemetryAttributes();
         setTelemetryAttributes(attrs);
       } catch {
         // non-critical
+      } finally {
+        setAttributesLoading(false);
       }
     };
     void loadAttributes();
@@ -189,6 +195,7 @@ const MetricsViewer: FunctionComponent<Props> = (
 
     const loadValues: () => Promise<void> = async () => {
       try {
+        setAttributeValuesLoading(true);
         const values: Array<string> =
           await MetricUtil.getTelemetryAttributeValues({
             attributeKey: attrKey,
@@ -202,6 +209,8 @@ const MetricsViewer: FunctionComponent<Props> = (
         );
       } catch {
         // non-critical
+      } finally {
+        setAttributeValuesLoading(false);
       }
     };
     void loadValues();
@@ -261,10 +270,27 @@ const MetricsViewer: FunctionComponent<Props> = (
     return parseSearch(submittedSearch);
   }, [submittedSearch, parseSearch]);
 
+  /*
+   * Merge attribute filters from two sources:
+   *   1. Tokens parsed from the typed search string (`@key:value`).
+   *   2. Chips in `activeFilters` whose key starts with `attributes.`
+   *      (added when the user picks a value from the dropdown / hits Enter).
+   */
+  const effectiveAttributes: Record<string, string> = useMemo(() => {
+    const attrs: Record<string, string> = { ...parsedSearch.attributes };
+    for (const filter of activeFilters) {
+      if (filter.facetKey.startsWith("attributes.")) {
+        const attrKey: string = filter.facetKey.substring("attributes.".length);
+        attrs[attrKey] = filter.value;
+      }
+    }
+    return attrs;
+  }, [parsedSearch.attributes, activeFilters]);
+
   // When attribute filters change, query the Metric analytics model for matching metric names
   useEffect(() => {
-    const attributeKeys: Array<string> = Object.keys(parsedSearch.attributes);
-    const filterKey: string = JSON.stringify(parsedSearch.attributes);
+    const attributeKeys: Array<string> = Object.keys(effectiveAttributes);
+    const filterKey: string = JSON.stringify(effectiveAttributes);
 
     if (attributeKeys.length === 0) {
       setAttributeMatchedNames(null);
@@ -293,7 +319,7 @@ const MetricsViewer: FunctionComponent<Props> = (
         const analyticsQuery: Query<Metric> = {
           projectId,
           time: new InBetween<Date>(dateRange.startValue, dateRange.endValue),
-          attributes: parsedSearch.attributes,
+          attributes: effectiveAttributes,
         } as Query<Metric>;
 
         const result: AnalyticsListResult<Metric> =
@@ -324,7 +350,7 @@ const MetricsViewer: FunctionComponent<Props> = (
       }
     };
     void fetchMatchingNames();
-  }, [parsedSearch.attributes, timeRange]);
+  }, [effectiveAttributes, timeRange]);
 
   // Build metric query
   const metricQuery: Query<MetricType> = useMemo(() => {
@@ -604,7 +630,10 @@ const MetricsViewer: FunctionComponent<Props> = (
               return c.key === facetKey;
             },
           );
-          const displayKey: string = config?.title || facetKey;
+          // Attribute chips (`attributes.<key>`) display as just `<key>`.
+          const displayKey: string = facetKey.startsWith("attributes.")
+            ? facetKey.substring("attributes.".length)
+            : config?.title || facetKey;
           const displayValue: string =
             config?.valueDisplayMap?.[value] || value;
           return [...prev, { facetKey, value, displayKey, displayValue }];
@@ -712,14 +741,24 @@ const MetricsViewer: FunctionComponent<Props> = (
       searchSuggestions={["name", "service"]}
       searchAttributeSuggestions={telemetryAttributes}
       searchValueSuggestions={attributeValueSuggestions}
+      searchAttributesLoading={attributesLoading}
+      searchValuesLoading={attributeValuesLoading}
       onSearchFieldValueSelect={(fieldKey: string, value: string) => {
-        const isKnownField: boolean = KNOWN_FIELD_KEYS.has(fieldKey);
-        const newSearch: string = isKnownField
-          ? `${fieldKey}:${value}`
-          : `@${fieldKey}:${value}`;
-        setSearchValue(newSearch);
-        setSubmittedSearch(newSearch);
-        setPage(1);
+        /*
+         * `name` and `service` are handled via the typed search path
+         * (substring + service facet), so promote those to the search
+         * string. Unknown keys are telemetry attributes — turn them into
+         * chips with the `attributes.` prefix so they live in
+         * `activeFilters` and are routed through the analytics query.
+         */
+        if (KNOWN_FIELD_KEYS.has(fieldKey)) {
+          const newSearch: string = `${fieldKey}:${value}`;
+          setSearchValue(newSearch);
+          setSubmittedSearch(newSearch);
+          setPage(1);
+          return;
+        }
+        handleFacetInclude(`attributes.${fieldKey}`, value);
       }}
       searchFieldAliasMap={FIELD_ALIAS_MAP}
       searchHelpRows={SEARCH_HELP_ROWS}

@@ -908,6 +908,24 @@ const DashboardLogsViewer: FunctionComponent<ComponentProps> = (
           continue;
         }
 
+        /*
+         * Keys prefixed with `attributes.` are telemetry attribute filters,
+         * which live under `query.attributes[<suffix>]` rather than as
+         * top-level columns.
+         */
+        if (key.startsWith("attributes.")) {
+          const attrKey: string = key.substring("attributes.".length);
+          const existing: Record<string, unknown> =
+            ((updatedFilter as any).attributes as Record<string, unknown>) ||
+            {};
+          existing[attrKey] =
+            values.size === 1
+              ? Array.from(values)[0]!
+              : new Includes(Array.from(values));
+          (updatedFilter as any).attributes = existing;
+          continue;
+        }
+
         if (values.size === 1) {
           // Single value: use direct equality
           const singleValue: string = Array.from(values)[0]!;
@@ -1083,7 +1101,16 @@ const DashboardLogsViewer: FunctionComponent<ComponentProps> = (
           trace: "traceId",
           span: "spanId",
         };
-        const resolvedKey: string = fieldAliases[fieldKey] || fieldKey;
+        /*
+         * Unknown keys are telemetry attributes (e.g. `http.method`,
+         * `fullDomain`). Prefix them with `attributes.` so the rebuild step
+         * routes them into `query.attributes[<key>]` instead of treating them
+         * as top-level columns. The chip displays without the prefix.
+         */
+        const aliased: string | undefined = fieldAliases[fieldKey];
+        const resolvedKey: string = aliased
+          ? aliased
+          : `attributes.${fieldKey}`;
 
         handleFacetInclude(resolvedKey, value);
       },
@@ -1164,7 +1191,10 @@ const DashboardLogsViewer: FunctionComponent<ComponentProps> = (
     };
 
     for (const [facetKey, values] of appliedFacetFilters.entries()) {
-      const displayKey: string = facetKeyDisplayNames[facetKey] || facetKey;
+      // Strip the `attributes.` prefix so the chip reads as `<key>: <value>`.
+      const displayKey: string = facetKey.startsWith("attributes.")
+        ? facetKey.substring("attributes.".length)
+        : facetKeyDisplayNames[facetKey] || facetKey;
 
       for (const value of values) {
         filters.push({

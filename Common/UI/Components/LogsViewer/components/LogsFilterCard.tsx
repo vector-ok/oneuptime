@@ -9,6 +9,8 @@ export interface LogsFilterCardProps {
   onSearchSubmit: () => void;
   valueSuggestions?: Record<string, Array<string>> | undefined;
   onFieldValueSelect?: ((fieldKey: string, value: string) => void) | undefined;
+  isAttributesLoading?: boolean | undefined;
+  isValuesLoading?: boolean | undefined;
 }
 
 const LogsFilterCard: React.ForwardRefExoticComponent<
@@ -37,6 +39,8 @@ const LogsFilterCard: React.ForwardRefExoticComponent<
             attributeSuggestions={props.logAttributes}
             valueSuggestions={props.valueSuggestions}
             onFieldValueSelect={props.onFieldValueSelect}
+            isAttributesLoading={props.isAttributesLoading}
+            isValuesLoading={props.isValuesLoading}
           />
         </div>
         <div>{props.toolbar}</div>
