@@ -62,7 +62,7 @@ export const DICTIONARY_FILTER_OPERATOR_OPTIONS: ReadonlyArray<DictionaryFilterO
     {
       operator: DictionaryFilterOperator.NotContains,
       label: "does not contain",
-      symbol: "!contains",
+      symbol: "does not contain",
     },
     {
       operator: DictionaryFilterOperator.StartsWith,
