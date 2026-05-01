@@ -513,6 +513,10 @@ export const EnterpriseLicenseValidationUrl: URL = URL.fromString(
   "https://oneuptime.com/api/enterprise-license/validate",
 );
 
+export const EnterpriseLicenseUserCountReportUrl: URL = URL.fromString(
+  "https://oneuptime.com/api/enterprise-license/report-user-count",
+);
+
 // Inbound Email Configuration for Incoming Email Monitor
 export enum InboundEmailProviderType {
   SendGrid = "SendGrid",

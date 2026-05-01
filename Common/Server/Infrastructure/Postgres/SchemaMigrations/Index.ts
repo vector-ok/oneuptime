@@ -295,6 +295,7 @@ import { AddTelemetryRetentionSettings1777018175127 } from "./1777018175127-AddT
 import { AddMonitorTemplate1777201966799 } from "./1777201966799-AddMonitorTemplate";
 import { MigrationName1777550162848 } from "./1777550162848-MigrationName";
 import { MigrationName1777571961028 } from "./1777571961028-MigrationName";
+import { MigrationName1777629313843 } from "./1777629313843-MigrationName";
 export default [
   InitialMigration,
   MigrationName1717678334852,
@@ -593,4 +594,5 @@ export default [
   AddMonitorTemplate1777201966799,
   MigrationName1777550162848,
   MigrationName1777571961028,
+  MigrationName1777629313843,
 ];

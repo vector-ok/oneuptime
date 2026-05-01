@@ -156,6 +156,9 @@ import "./Jobs/OnCallPolicy/DeleteOldTimeLogs";
 
 import "./Jobs/PaymentProvider/SendDailyEmailsToOwnersIfSubscriptionIsOverdue";
 
+// Enterprise License usage reporting (self-hosted only).
+import "./Jobs/EnterpriseLicense/ReportUserCount";
+
 import AnalyticsTableManagement from "./Utils/AnalyticsDatabase/TableManegement";
 import RunDatabaseMigrations from "./Utils/DataMigration";
 import JobDictionary from "./Utils/JobDictionary";
