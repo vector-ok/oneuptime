@@ -953,10 +953,8 @@ const TracesViewer: FunctionComponent<Props> = (props: Props): ReactElement => {
         "hasException",
         "statusMessage",
         "duration",
-        ...telemetryAttributes.map((attr: string): string => {
-          return `@${attr}`;
-        }),
       ]}
+      searchAttributeSuggestions={telemetryAttributes}
       searchValueSuggestions={attributeValueSuggestions}
       onSearchFieldValueSelect={(fieldKey: string, value: string) => {
         const isKnownField: boolean = KNOWN_FIELD_KEYS.has(fieldKey);

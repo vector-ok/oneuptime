@@ -130,6 +130,10 @@ const ExceptionsViewer: FunctionComponent<ExceptionsViewerProps> = (
   const [submittedSearch, setSubmittedSearch] = useState<string>("");
   const [activeFilters, setActiveFilters] = useState<Array<ActiveFilter>>([]);
 
+  const [telemetryAttributes, setTelemetryAttributes] = useState<Array<string>>(
+    [],
+  );
+
   const [timeRange, setTimeRange] = useState<RangeStartAndEndDateTime>({
     range: TimeRange.PAST_ONE_DAY,
   });
@@ -160,6 +164,30 @@ const ExceptionsViewer: FunctionComponent<ExceptionsViewerProps> = (
       }
     };
     void loadServices();
+  }, []);
+
+  useEffect(() => {
+    const loadAttributes: () => Promise<void> = async () => {
+      try {
+        const response: HTTPResponse<JSONObject> | HTTPErrorResponse =
+          await API.post({
+            url: URL.fromString(APP_API_URL.toString()).addRoute(
+              "/telemetry/exceptions/get-attributes",
+            ),
+            data: {},
+            headers: ModelAPI.getCommonHeaders(),
+          });
+        if (response instanceof HTTPErrorResponse) {
+          throw response;
+        }
+        setTelemetryAttributes(
+          (response.data["attributes"] || []) as Array<string>,
+        );
+      } catch {
+        // non-critical
+      }
+    };
+    void loadAttributes();
   }, []);
 
   const serviceById: Record<string, Service> = useMemo(() => {
@@ -668,6 +696,19 @@ const ExceptionsViewer: FunctionComponent<ExceptionsViewerProps> = (
         setPage(1);
       }}
       searchPlaceholder="Search exceptions — e.g. @type:TypeError @service:api"
+      /*
+       * Exceptions treats every filter as `@alias:value` (no plain `field:value`
+       * form), so the well-known aliases live alongside the user's attribute
+       * keys in the @-mode dropdown.
+       */
+      searchAttributeSuggestions={[
+        "type",
+        "service",
+        "env",
+        ...telemetryAttributes.filter((attr: string): boolean => {
+          return attr !== "type" && attr !== "service" && attr !== "env";
+        }),
+      ]}
       searchFieldAliasMap={FIELD_ALIAS_MAP}
       searchHelpRows={SEARCH_HELP_ROWS}
       searchHelpCombinedExample="@service:api @env:production TypeError"

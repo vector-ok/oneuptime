@@ -709,13 +709,8 @@ const MetricsViewer: FunctionComponent<Props> = (
         setPage(1);
       }}
       searchPlaceholder="Search metrics — e.g. name:http service:api @container.name:postgres"
-      searchSuggestions={[
-        "name",
-        "service",
-        ...telemetryAttributes.map((attr: string): string => {
-          return `@${attr}`;
-        }),
-      ]}
+      searchSuggestions={["name", "service"]}
+      searchAttributeSuggestions={telemetryAttributes}
       searchValueSuggestions={attributeValueSuggestions}
       onSearchFieldValueSelect={(fieldKey: string, value: string) => {
         const isKnownField: boolean = KNOWN_FIELD_KEYS.has(fieldKey);

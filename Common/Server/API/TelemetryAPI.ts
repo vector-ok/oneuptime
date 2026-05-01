@@ -96,6 +96,22 @@ router.post(
   },
 );
 
+router.post(
+  "/telemetry/exceptions/get-attributes",
+  UserMiddleware.getUserMiddleware,
+  async (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
+    return getAttributes(req, res, next, TelemetryType.Exception);
+  },
+);
+
+router.post(
+  "/telemetry/exceptions/get-attribute-values",
+  UserMiddleware.getUserMiddleware,
+  async (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
+    return getAttributeValues(req, res, next, TelemetryType.Exception);
+  },
+);
+
 type GetAttributesFunction = (
   req: ExpressRequest,
   res: ExpressResponse,

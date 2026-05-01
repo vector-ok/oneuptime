@@ -5,6 +5,11 @@ export interface TelemetrySearchSuggestionsProps {
   selectedIndex: number;
   onSelect: (suggestion: string) => void;
   fieldContext?: string | undefined;
+  /*
+   * When true, items are attribute keys (rendered with the @ prefix).
+   * When false, items are top-level field names (no prefix).
+   */
+  isAttributeMode?: boolean | undefined;
 }
 
 const MAX_VISIBLE_SUGGESTIONS: number = 8;
@@ -43,11 +48,13 @@ const TelemetrySearchSuggestions: FunctionComponent<
                 </span>
                 <span className="font-mono">{suggestion}</span>
               </>
-            ) : (
+            ) : props.isAttributeMode ? (
               <>
                 <span className="font-mono text-xs text-indigo-400">@</span>
                 <span className="font-mono">{suggestion}</span>
               </>
+            ) : (
+              <span className="font-mono">{suggestion}</span>
             )}
           </button>
         );

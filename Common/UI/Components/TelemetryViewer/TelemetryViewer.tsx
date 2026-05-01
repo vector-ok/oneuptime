@@ -42,6 +42,7 @@ export interface TelemetryViewerProps<T> {
   onSearchSubmit: () => void;
   searchPlaceholder?: string | undefined;
   searchSuggestions?: Array<string> | undefined;
+  searchAttributeSuggestions?: Array<string> | undefined;
   searchValueSuggestions?: Record<string, Array<string>> | undefined;
   searchFieldAliasMap?: Record<string, string> | undefined;
   onSearchFieldValueSelect?:
@@ -118,6 +119,7 @@ function TelemetryViewerInner<T>(props: TelemetryViewerProps<T>): ReactElement {
             onSubmit={props.onSearchSubmit}
             placeholder={props.searchPlaceholder}
             suggestions={props.searchSuggestions}
+            attributeSuggestions={props.searchAttributeSuggestions}
             valueSuggestions={props.searchValueSuggestions}
             fieldAliasMap={props.searchFieldAliasMap}
             onFieldValueSelect={props.onSearchFieldValueSelect}

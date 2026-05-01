@@ -17,7 +17,10 @@ export interface LogSearchBarProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  // Top-level field names (e.g. "severity", "service") — used as `field:value`.
   suggestions?: Array<string> | undefined;
+  // Telemetry attribute keys (no leading `@`) — used as `@attr:value`.
+  attributeSuggestions?: Array<string> | undefined;
   valueSuggestions?: Record<string, Array<string>> | undefined;
   onFieldValueSelect?: ((fieldKey: string, value: string) => void) | undefined;
   placeholder?: string | undefined;
@@ -67,25 +70,30 @@ const LogSearchBar: React.ForwardRefExoticComponent<
       ? normalizedWord.substring(colonIndex + 1)
       : "";
 
+    /*
+     * `@` is the explicit trigger for attribute mode — only show attribute
+     * keys there. Without `@`, only show top-level field names. Mixing
+     * the two led to confusing dropdowns that rendered field names like
+     * "severity" as if they were attributes.
+     */
+    const activeSuggestions: Array<string> = hasAtPrefix
+      ? props.attributeSuggestions || []
+      : props.suggestions || [];
+
     const filteredSuggestions: Array<string> = isValueMode
       ? getValueSuggestions(
           fieldPrefix,
           partialValue,
           props.valueSuggestions || {},
         )
-      : (props.suggestions || []).filter((s: string): boolean => {
+      : activeSuggestions.filter((s: string): boolean => {
           if (!normalizedWord && !hasAtPrefix) {
             return false;
           }
-          // When just "@" is typed, show all suggestions
           if (hasAtPrefix && normalizedWord.length === 0) {
             return true;
           }
-          // Match against the suggestion name, stripping any leading "@" from the suggestion too
-          const normalizedSuggestion: string = s.startsWith("@")
-            ? s.substring(1).toLowerCase()
-            : s.toLowerCase();
-          return normalizedSuggestion.startsWith(normalizedWord.toLowerCase());
+          return s.toLowerCase().startsWith(normalizedWord.toLowerCase());
         });
 
     const shouldShowSuggestions: boolean =
@@ -219,11 +227,16 @@ const LogSearchBar: React.ForwardRefExoticComponent<
           return;
         }
 
-        // Field name mode: append colon
+        /*
+         * Field name mode: append colon (re-prefix `@` for attribute keys
+         * since they're stored without it)
+         */
         const parts: Array<string> = props.value.split(/\s+/);
 
         if (parts.length > 0) {
-          parts[parts.length - 1] = suggestion + ":";
+          parts[parts.length - 1] = hasAtPrefix
+            ? "@" + suggestion + ":"
+            : suggestion + ":";
         }
 
         props.onChange(parts.join(" "));
@@ -231,7 +244,7 @@ const LogSearchBar: React.ForwardRefExoticComponent<
         setShowHelp(false);
         inputRef.current?.focus();
       },
-      [props, isValueMode, fieldPrefix],
+      [props, isValueMode, fieldPrefix, hasAtPrefix],
     );
 
     const handleExampleClick: (example: string) => void = useCallback(
@@ -326,6 +339,7 @@ const LogSearchBar: React.ForwardRefExoticComponent<
             selectedIndex={selectedSuggestionIndex}
             onSelect={applySuggestion}
             fieldContext={isValueMode ? fieldPrefix : undefined}
+            isAttributeMode={hasAtPrefix}
           />
         )}
 

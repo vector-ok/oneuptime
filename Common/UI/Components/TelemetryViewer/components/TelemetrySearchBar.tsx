@@ -18,8 +18,17 @@ export interface TelemetrySearchBarProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
-  // Field-name suggestions shown when user types "@".
+  /*
+   * Top-level field names like "service", "name" — used as `field:value`
+   * (no @). Shown when the user types regular text.
+   */
   suggestions?: Array<string> | undefined;
+  /*
+   * Telemetry attribute keys like "host.name", "container.id" — used as
+   * `@attr:value`. Shown when the user types `@`. Pass plain keys, not
+   * pre-prefixed with `@` — the bar adds it on submit.
+   */
+  attributeSuggestions?: Array<string> | undefined;
   // field → allowed value completions (resolved field keys).
   valueSuggestions?: Record<string, Array<string>> | undefined;
   // Called when the user picks a concrete field:value chip from the dropdown.
@@ -79,6 +88,17 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
       ? normalizedWord.substring(colonIndex + 1)
       : "";
 
+    /*
+     * Pick the suggestion list based on whether the user typed `@`.
+     * `@` is the explicit trigger for attribute mode — only show attribute
+     * keys there. Without `@`, only show top-level field names. Mixing the
+     * two led to confusing dropdowns that rendered field names like "name"
+     * as if they were attributes.
+     */
+    const activeSuggestions: Array<string> = hasAtPrefix
+      ? props.attributeSuggestions || []
+      : props.suggestions || [];
+
     const filteredSuggestions: Array<string> = isValueMode
       ? getValueSuggestions(
           fieldPrefix,
@@ -86,17 +106,14 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
           props.valueSuggestions || {},
           fieldAliasMap,
         )
-      : (props.suggestions || []).filter((s: string): boolean => {
+      : activeSuggestions.filter((s: string): boolean => {
           if (!normalizedWord && !hasAtPrefix) {
             return false;
           }
           if (hasAtPrefix && normalizedWord.length === 0) {
             return true;
           }
-          const normalizedSuggestion: string = s.startsWith("@")
-            ? s.substring(1).toLowerCase()
-            : s.toLowerCase();
-          return normalizedSuggestion.startsWith(normalizedWord.toLowerCase());
+          return s.toLowerCase().startsWith(normalizedWord.toLowerCase());
         });
 
     const shouldShowSuggestions: boolean =
@@ -229,7 +246,13 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
         const parts: Array<string> = props.value.split(/\s+/);
 
         if (parts.length > 0) {
-          parts[parts.length - 1] = suggestion + ":";
+          /*
+           * Attribute suggestions are stored without `@`; add it back
+           * when filling the bar so the parser recognizes it as an attribute.
+           */
+          parts[parts.length - 1] = hasAtPrefix
+            ? "@" + suggestion + ":"
+            : suggestion + ":";
         }
 
         props.onChange(parts.join(" "));
@@ -237,7 +260,7 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
         setShowHelp(false);
         inputRef.current?.focus();
       },
-      [props, isValueMode, fieldPrefix],
+      [props, isValueMode, fieldPrefix, hasAtPrefix],
     );
 
     const handleExampleClick: (example: string) => void = useCallback(
@@ -329,6 +352,7 @@ const TelemetrySearchBar: React.ForwardRefExoticComponent<
             selectedIndex={selectedSuggestionIndex}
             onSelect={applySuggestion}
             fieldContext={isValueMode ? fieldPrefix : undefined}
+            isAttributeMode={hasAtPrefix}
           />
         )}
 
