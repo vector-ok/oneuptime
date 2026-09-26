@@ -24,7 +24,9 @@ import OnCallDutyPolicyService from "./OnCallDutyPolicyService";
 import TeamMemberService from "./TeamMemberService";
 import UserService from "./UserService";
 import URL from "../../Types/API/URL";
-import { getSloAffectedResourceMarkdownLines } from "../../Utils/Slo/SloAffectedResourceMarkdown";
+import LinkedAffectedResources, {
+  LinkedAffectedResource,
+} from "../Utils/AffectedResources/LinkedAffectedResources";
 import DatabaseCommonInteractionProps from "../../Types/BaseDatabase/DatabaseCommonInteractionProps";
 import SortOrder from "../../Types/BaseDatabase/SortOrder";
 import LIMIT_MAX, { LIMIT_PER_PROJECT } from "../../Types/Database/LimitMax";
@@ -1307,20 +1309,10 @@ export class Service extends DatabaseService<Model> {
         labels: {
           name: true,
         },
-        monitors: {
-          name: true,
-          _id: true,
-        },
         /*
-         * Named under "Resources Affected" in the created feed item. This read
-         * runs as root, so projectId comes along and the feed names only this
-         * project's SLOs (getSloAffectedResourceMarkdownLines).
+         * The resources named under "Resources Affected" are read by the feed
+         * builder itself (LinkedAffectedResources), one relation at a time.
          */
-        serviceLevelObjectives: {
-          name: true,
-          _id: true,
-          projectId: true,
-        },
       },
       props: {
         isRoot: true,
@@ -2010,35 +2002,28 @@ ${incident.description || "No description provided."}
       }
 
       /*
-       * Monitors, then the SLOs this incident is linked to. A burn-rate
-       * incident carries no monitors on purpose, so its SLO is the only
-       * resource there is to name - and the feed's only way back to the
-       * objective that declared it. The SLO link is built inline:
-       * ServiceLevelObjectiveService cannot be imported here (it reaches
-       * this service through the burn-rate rule service).
+       * Everything the incident's Affected Resources card lists: monitors,
+       * the hosts, clusters and services it is attached to, then its SLOs. A
+       * burn-rate incident carries no monitors on purpose, so its SLO is the
+       * only resource there is to name - and the feed's only way back to the
+       * objective that declared it.
        */
-      const sloLines: Array<string> =
-        incident.serviceLevelObjectives &&
-        incident.serviceLevelObjectives.length > 0
-          ? getSloAffectedResourceMarkdownLines({
-              dashboardUrl: await DatabaseConfig.getDashboardUrl(),
-              projectId: incident.projectId!,
-              serviceLevelObjectives: incident.serviceLevelObjectives,
-            })
-          : [];
+      const resources: Array<LinkedAffectedResource> =
+        await LinkedAffectedResources.readForIncident({
+          service: this,
+          projectId: incident.projectId!,
+          incidentId: incident.id!,
+        });
 
-      if (
-        (incident.monitors && incident.monitors.length > 0) ||
-        sloLines.length > 0
-      ) {
+      if (resources.length > 0) {
         feedInfoInMarkdown += `🌎 **Resources Affected**:\n`;
 
-        for (const monitor of incident.monitors || []) {
-          feedInfoInMarkdown += `- [${monitor.name}](${(await MonitorService.getMonitorLinkInDashboard(incident.projectId!, monitor.id!)).toString()})\n`;
-        }
-
-        for (const sloLine of sloLines) {
-          feedInfoInMarkdown += `${sloLine}\n`;
+        for (const resourceLine of LinkedAffectedResources.getMarkdownLines({
+          dashboardUrl: await DatabaseConfig.getDashboardUrl(),
+          projectId: incident.projectId!,
+          resources: resources,
+        })) {
+          feedInfoInMarkdown += `${resourceLine}\n`;
         }
 
         feedInfoInMarkdown += `\n\n`;
