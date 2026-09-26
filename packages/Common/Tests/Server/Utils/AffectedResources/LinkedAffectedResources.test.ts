@@ -338,14 +338,23 @@ describe("collect", () => {
       LinkedAffectedResources.collect({
         projectId: PROJECT_ID,
         records: [
-          { projectId: PROJECT_ID, serviceLevelObjectives: [row(SLO_ID, "Checkout")] },
-          { projectId: PROJECT_ID, services: [row(SERVICE_ID, "checkout-api")] },
+          {
+            projectId: PROJECT_ID,
+            serviceLevelObjectives: [row(SLO_ID, "Checkout")],
+          },
+          {
+            projectId: PROJECT_ID,
+            services: [row(SERVICE_ID, "checkout-api")],
+          },
           { projectId: PROJECT_ID, hosts: [row(HOST_ID, "web-01")] },
           {
             projectId: PROJECT_ID,
             kubernetesClusters: [row(CLUSTER_ID, "prod-eu")],
           },
-          { projectId: PROJECT_ID, monitors: [row(MONITOR_ID, "checkout-web")] },
+          {
+            projectId: PROJECT_ID,
+            monitors: [row(MONITOR_ID, "checkout-web")],
+          },
         ],
       });
 
@@ -372,7 +381,9 @@ describe("collect", () => {
         projectId: PROJECT_ID,
         records: [{ projectId: PROJECT_ID, monitor: row(MONITOR_ID, "api") }],
       }),
-    ).toEqual([resource(LinkedAffectedResourceType.Monitor, MONITOR_ID, "api")]);
+    ).toEqual([
+      resource(LinkedAffectedResourceType.Monitor, MONITOR_ID, "api"),
+    ]);
   });
 
   test("an alert without a monitor has none", () => {
@@ -686,7 +697,10 @@ describe("plain-text names", () => {
 
   test("names every resource, comma separated", () => {
     expect(
-      LinkedAffectedResources.getText({ resources: RESOURCES, fallback: "None" }),
+      LinkedAffectedResources.getText({
+        resources: RESOURCES,
+        fallback: "None",
+      }),
     ).toBe("checkout-web, web-01, Checkout availability");
   });
 
@@ -764,7 +778,11 @@ describe("feed markdown", () => {
           SLO_ID,
           "Checkout availability",
         ),
-        resource(LinkedAffectedResourceType.Monitor, MONITOR_ID, "checkout-web"),
+        resource(
+          LinkedAffectedResourceType.Monitor,
+          MONITOR_ID,
+          "checkout-web",
+        ),
         resource(LinkedAffectedResourceType.Host, HOST_ID, "web-01"),
         resource(
           LinkedAffectedResourceType.KubernetesCluster,

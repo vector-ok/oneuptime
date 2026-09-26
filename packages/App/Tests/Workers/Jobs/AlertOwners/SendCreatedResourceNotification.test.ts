@@ -581,14 +581,14 @@ describe("AlertOwner:SendCreatedResourceEmail worker", () => {
       const relationReads: Array<{
         query: Record<string, unknown>;
         props: Record<string, unknown>;
-      }> = alertService.findAllBy.mock.calls.slice(1).map(
-        (args: Array<unknown>) => {
+      }> = alertService.findAllBy.mock.calls
+        .slice(1)
+        .map((args: Array<unknown>) => {
           return args[0] as {
             query: Record<string, unknown>;
             props: Record<string, unknown>;
           };
-        },
-      );
+        });
 
       expect(relationReads.length).toBeGreaterThan(0);
 

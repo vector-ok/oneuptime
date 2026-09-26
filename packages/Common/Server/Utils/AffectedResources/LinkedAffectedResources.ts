@@ -457,7 +457,10 @@ export default class LinkedAffectedResources {
     addName(seriesSummary);
 
     for (const resource of data.resources) {
-      if (seriesSummary && resource.type === LinkedAffectedResourceType.Monitor) {
+      if (
+        seriesSummary &&
+        resource.type === LinkedAffectedResourceType.Monitor
+      ) {
         continue;
       }
 

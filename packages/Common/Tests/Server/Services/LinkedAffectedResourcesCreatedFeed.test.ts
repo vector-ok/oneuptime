@@ -199,7 +199,11 @@ describe("incident created feed item", () => {
   test("another project's host, linked before the write guard, is not named", async () => {
     const markdown: string = await createFeed({
       hosts: [
-        related(FOREIGN_HOST_ID, "payments-db-of-another-project", OTHER_PROJECT_ID),
+        related(
+          FOREIGN_HOST_ID,
+          "payments-db-of-another-project",
+          OTHER_PROJECT_ID,
+        ),
         related(HOST_ID, "web"),
       ],
     });
@@ -213,7 +217,12 @@ describe("incident created feed item", () => {
 
   test("a host name an agent reported cannot inject markdown", async () => {
     const markdown: string = await createFeed({
-      hosts: [related(HOST_ID, "web](https://evil.example) ![p](https://t.example/p.gif)")],
+      hosts: [
+        related(
+          HOST_ID,
+          "web](https://evil.example) ![p](https://t.example/p.gif)",
+        ),
+      ],
     });
 
     expect(markdown).not.toContain("](https://evil.example)");
@@ -298,7 +307,10 @@ describe("scheduled maintenance feed items", () => {
 
   beforeEach(() => {
     feedItem = jest
-      .spyOn(ScheduledMaintenanceFeedService, "createScheduledMaintenanceFeedItem")
+      .spyOn(
+        ScheduledMaintenanceFeedService,
+        "createScheduledMaintenanceFeedItem",
+      )
       .mockResolvedValue(undefined as never);
   });
 
@@ -367,9 +379,7 @@ describe("scheduled maintenance feed items", () => {
 
       await update({ hosts: [{ _id: HOST_ID }] });
 
-      expect(
-        sectionLines(postedMarkdown(feedItem), UPDATED_HEADER),
-      ).toEqual([
+      expect(sectionLines(postedMarkdown(feedItem), UPDATED_HEADER)).toEqual([
         `- [checkout-web](${link("monitors", MONITOR_ID)})`,
         `- [Host web](${link("host", HOST_ID)})`,
       ]);

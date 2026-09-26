@@ -371,9 +371,9 @@ describe("incident created feed item", () => {
      * projectId too: the read runs as root, and the feed names only SLOs of
      * the record's own project.
      */
-    expect((sloRead!["select"] as JSONObject)["serviceLevelObjectives"]).toEqual(
-      { _id: true, name: true, projectId: true },
-    );
+    expect(
+      (sloRead!["select"] as JSONObject)["serviceLevelObjectives"],
+    ).toEqual({ _id: true, name: true, projectId: true });
     expect(sloRead!["props"]).toEqual({ isRoot: true });
     expect((sloRead!["query"] as JSONObject)["projectId"]).toBe(PROJECT_ID);
   });

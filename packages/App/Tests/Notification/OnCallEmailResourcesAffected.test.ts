@@ -155,7 +155,7 @@ async function alertResourcesAffected(
       LOG_TIMELINE_ID,
     );
 
-  return message.vars["resourcesAffected"]!;
+  return message.vars["resourcesAffected"] as string;
 }
 
 beforeEach(() => {
@@ -183,7 +183,10 @@ describe("the alert on-call email's Resources Affected row", () => {
       await alertResourcesAffected({
         monitor: null,
         serviceLevelObjectives: [
-          related("0193c0de-ffff-4aaa-8bbb-0000000000c1", "Checkout availability"),
+          related(
+            "0193c0de-ffff-4aaa-8bbb-0000000000c1",
+            "Checkout availability",
+          ),
         ],
       }),
     ).toBe("Checkout availability");
@@ -192,7 +195,10 @@ describe("the alert on-call email's Resources Affected row", () => {
   test("names the monitor, then the hosts, clusters and services it is attached to", async () => {
     expect(
       await alertResourcesAffected({
-        monitor: related("0193c0de-ffff-4aaa-8bbb-0000000000a1", "checkout-web"),
+        monitor: related(
+          "0193c0de-ffff-4aaa-8bbb-0000000000a1",
+          "checkout-web",
+        ),
         hosts: [related("0193c0de-ffff-4aaa-8bbb-0000000000b1", "web-01")],
         kubernetesClusters: [
           related("0193c0de-ffff-4aaa-8bbb-0000000000d1", "prod-eu"),
@@ -240,8 +246,7 @@ describe("the alert on-call email's Resources Affected row", () => {
   });
 
   test("reads every relation as root, inside the alert's project", async () => {
-    const reads: FindAllBySpy =
-      answerRelationReads(AlertService, {});
+    const reads: FindAllBySpy = answerRelationReads(AlertService, {});
 
     await UserNotificationRuleService.generateEmailTemplateForAlertCreated(
       RESPONDER,
@@ -269,12 +274,17 @@ describe("the alert on-call email's Resources Affected row", () => {
 describe("the incident on-call email's Resources Affected row", () => {
   test("names monitors and every other resource the incident is linked to", async () => {
     answerRelationReads(IncidentService, {
-      monitors: [related("0193c0de-ffff-4aaa-8bbb-0000000000a1", "checkout-web")],
+      monitors: [
+        related("0193c0de-ffff-4aaa-8bbb-0000000000a1", "checkout-web"),
+      ],
       databaseServers: [
         related("0193c0de-ffff-4aaa-8bbb-0000000000d2", "orders-db"),
       ],
       serviceLevelObjectives: [
-        related("0193c0de-ffff-4aaa-8bbb-0000000000c1", "Checkout availability"),
+        related(
+          "0193c0de-ffff-4aaa-8bbb-0000000000c1",
+          "Checkout availability",
+        ),
       ],
     });
 
