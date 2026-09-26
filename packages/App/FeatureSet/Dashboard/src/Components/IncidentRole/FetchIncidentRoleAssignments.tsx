@@ -26,6 +26,18 @@ export interface ComponentProps {
 }
 
 /*
+ * The answer for one set of roles, remembered with the set it was asked for.
+ * A render that already has a new set of roles but not yet its answer shows
+ * the loader: drawn from the old answer, a role it does not hold would read
+ * as not found, and its users would be looked up only to be thrown away.
+ */
+interface RolesAnswer {
+  roleIdsKey: string;
+  rolesById: Map<string, IncidentRole>;
+  error: string;
+}
+
+/*
  * A create wizard holds only the ids of the roles it assigns and of the users
  * assigned to them, so its review step looks the roles up to show each one's
  * name in its color, with the people assigned to it beneath - instead of a
@@ -44,26 +56,27 @@ const FetchIncidentRoleAssignments: FunctionComponent<ComponentProps> = (
     ),
   ).join(",");
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
-  const [rolesById, setRolesById] = useState<Map<string, IncidentRole>>(
-    new Map(),
-  );
+  const [answer, setAnswer] = useState<RolesAnswer | null>(null);
 
   useEffect(() => {
     // Only the answer for the roles on screen may land.
     let isCurrent: boolean = true;
 
-    const fetchRoles: PromiseVoidFunction = async (): Promise<void> => {
-      setError("");
+    const showError: (err: unknown) => void = (err: unknown): void => {
+      if (isCurrent) {
+        setAnswer({
+          roleIdsKey: roleIdsKey,
+          rolesById: new Map(),
+          error: API.getFriendlyMessage(err),
+        });
+      }
+    };
 
+    const fetchRoles: PromiseVoidFunction = async (): Promise<void> => {
       if (!roleIdsKey) {
-        setRolesById(new Map());
-        setIsLoading(false);
+        setAnswer({ roleIdsKey: roleIdsKey, rolesById: new Map(), error: "" });
         return;
       }
-
-      setIsLoading(true);
 
       try {
         const roles: ListResult<IncidentRole> =
@@ -97,23 +110,19 @@ const FetchIncidentRoleAssignments: FunctionComponent<ComponentProps> = (
             }
           }
 
-          setRolesById(fetchedRolesById);
+          setAnswer({
+            roleIdsKey: roleIdsKey,
+            rolesById: fetchedRolesById,
+            error: "",
+          });
         }
       } catch (err) {
-        if (isCurrent) {
-          setError(API.getFriendlyMessage(err));
-        }
-      }
-
-      if (isCurrent) {
-        setIsLoading(false);
+        showError(err);
       }
     };
 
     fetchRoles().catch((err: Exception) => {
-      if (isCurrent) {
-        setError(API.getFriendlyMessage(err));
-      }
+      showError(err);
     });
 
     return () => {
@@ -121,13 +130,15 @@ const FetchIncidentRoleAssignments: FunctionComponent<ComponentProps> = (
     };
   }, [roleIdsKey]);
 
-  if (error) {
-    return <ErrorMessage message={error} />;
-  }
-
-  if (isLoading) {
+  if (!answer || answer.roleIdsKey !== roleIdsKey) {
     return <ComponentLoader />;
   }
+
+  if (answer.error) {
+    return <ErrorMessage message={answer.error} />;
+  }
+
+  const rolesById: Map<string, IncidentRole> = answer.rolesById;
 
   return (
     <div className="space-y-4">
