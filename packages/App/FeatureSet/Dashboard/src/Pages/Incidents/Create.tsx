@@ -877,9 +877,12 @@ const IncidentCreate: FunctionComponent<
                     }
                   },
                   /*
-                   * The form holds bare IDs here. The read-only picker looks
-                   * their names up, so the review step names every resource
-                   * the user picked instead of counting them.
+                   * The form holds bare IDs once the picker has written to
+                   * it, or {_id, name} objects from a template or alert
+                   * prefill the user has not touched. The read-only picker
+                   * takes both and looks up any name it lacks, so the review
+                   * step names every resource the user picked instead of
+                   * counting them.
                    */
                   getSummaryElement: (item: FormValues<Incident>) => {
                     const hasResources: boolean = [

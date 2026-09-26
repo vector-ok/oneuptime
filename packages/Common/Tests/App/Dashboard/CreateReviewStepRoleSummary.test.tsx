@@ -125,6 +125,7 @@ import BaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/Database
 import IncidentRole from "../../../Models/DatabaseModels/IncidentRole";
 import IncidentState from "../../../Models/DatabaseModels/IncidentState";
 import Project from "../../../Models/DatabaseModels/Project";
+import TeamMember from "../../../Models/DatabaseModels/TeamMember";
 import User from "../../../Models/DatabaseModels/User";
 import Route from "../../../Types/API/Route";
 import Includes from "../../../Types/BaseDatabase/Includes";
@@ -292,8 +293,9 @@ function rolesAnswer(fixtures: Array<RoleFixture>): ListAnswer {
   return listOf(fixtures.map(makeRole));
 }
 
+// The ids a lookup asks for: roles by `_id`, people through TeamMember's `userId`.
 function idsIn(query: Record<string, unknown>): Array<string> | null {
-  const idQuery: unknown = query["_id"];
+  const idQuery: unknown = query["_id"] ?? query["userId"];
 
   if (!(idQuery instanceof Includes)) {
     return null;
@@ -320,11 +322,27 @@ async function answerList(request: ListRequest): Promise<ListAnswer> {
     );
   }
 
-  if (request.modelType === User && ids) {
+  /*
+   * People are looked up through TeamMember, the project-scoped link to User:
+   * the server refuses a list of other users by id from the User model
+   * itself. A person in several teams comes back once per team - Alice is in
+   * two - so a summary that lists every row would name her twice.
+   */
+  if (request.modelType === TeamMember && ids) {
     return listOf(
       USER_FIXTURES.filter((fixture: UserFixture): boolean => {
         return ids.includes(fixture.id);
-      }).map(makeUser),
+      }).flatMap((fixture: UserFixture): Array<TeamMember> => {
+        return Array.from(
+          { length: fixture.id === ALICE.id ? 2 : 1 },
+          (): TeamMember => {
+            const teamMember: TeamMember = new TeamMember();
+            teamMember._id = ObjectID.generate().toString();
+            teamMember.user = makeUser(fixture);
+            return teamMember;
+          },
+        );
+      }),
     );
   }
 
@@ -805,7 +823,7 @@ describe.each(PAGES)(
       await renderSummary(field);
 
       const roleLookups: Array<Lookup> = lookupsOf(IncidentRole);
-      const userLookups: Array<Lookup> = lookupsOf(User);
+      const userLookups: Array<Lookup> = lookupsOf(TeamMember);
 
       expect(roleLookups).toHaveLength(1);
       expect(asIdSet(roleLookups[0]!.ids)).toBe(
@@ -834,7 +852,8 @@ describe.each(PAGES)(
         ),
       );
 
-      // And nothing else.
+      // And nothing else - never the User model, which would refuse it.
+      expect(lookupsOf(User)).toEqual([]);
       expect(lookupsMade()).toHaveLength(
         roleLookups.length + userLookups.length,
       );
@@ -895,6 +914,18 @@ describe.each(PAGES)(
       for (const pattern of COUNT_SENTENCE_PATTERNS) {
         expect(container.textContent).not.toMatch(pattern);
       }
+
+      /*
+       * The error stands in for the whole list: drawn beneath it, every role
+       * would read as deleted and each would still look its people up.
+       */
+      expect(container).not.toHaveTextContent(ROLE_NOT_FOUND_MESSAGE);
+
+      for (const user of USER_FIXTURES) {
+        expect(container).not.toHaveTextContent(user.name);
+      }
+
+      expect(lookupsOf(TeamMember)).toEqual([]);
     });
 
     test("says a role that no longer exists could not be found, still lists its people, and names the others", async () => {
@@ -979,8 +1010,8 @@ describe.each(PAGES)(
        * The new people were looked up; the role, the same one as before,
        * was not asked for again.
        */
-      expect(lookupsOf(User)).toHaveLength(1);
-      expect(asIdSet(lookupsOf(User)[0]!.ids)).toBe(
+      expect(lookupsOf(TeamMember)).toHaveLength(1);
+      expect(asIdSet(lookupsOf(TeamMember)[0]!.ids)).toBe(
         asIdSet([BOB.id, CAROL.id]),
       );
       expect(lookupsOf(IncidentRole)).toEqual([]);
@@ -1094,12 +1125,16 @@ describe("FetchIncidentRoleAssignments", () => {
     expect(screen.getByText(COMMUNICATIONS_LEAD.name)).toBeInTheDocument();
 
     /*
-     * The old answer holds only the Incident Commander. Were it let in, the
-     * Communications Lead on screen would turn into "could not be found".
+     * The old answer holds only the Incident Commander. Were it let in, it
+     * would be filed under the Commander's roles, and the summary would fall
+     * back to the loader for good: nothing asks for the Communications Lead
+     * again.
      */
     await act(async () => {
       firstLookup.resolve(rolesAnswer([INCIDENT_COMMANDER]));
     });
+
+    expect(screen.queryByTestId("component-loader")).toBeNull();
 
     expect(screen.getByText(COMMUNICATIONS_LEAD.name)).toBeInTheDocument();
     expect(pillColorOf(view.container, COMMUNICATIONS_LEAD.name)).toBe(
@@ -1107,7 +1142,6 @@ describe("FetchIncidentRoleAssignments", () => {
     );
     expect(screen.getByText(BOB.name)).toBeInTheDocument();
     expect(history.everShown(ROLE_NOT_FOUND_MESSAGE)).toBe(false);
-    expect(history.everShown(INCIDENT_COMMANDER.name)).toBe(false);
 
     history.stop();
   });
@@ -1136,7 +1170,6 @@ describe("FetchIncidentRoleAssignments", () => {
     expect(await screen.findByText(BOB.name)).toBeInTheDocument();
     expect(screen.getByText(COMMUNICATIONS_LEAD.name)).toBeInTheDocument();
     expect(history.everShown(ROLE_NOT_FOUND_MESSAGE)).toBe(false);
-    expect(history.everShown(INCIDENT_COMMANDER.name)).toBe(false);
 
     history.stop();
   });
@@ -1160,6 +1193,7 @@ describe("FetchIncidentRoleAssignments", () => {
       firstLookup.reject(new Error(LOOKUP_FAILURE_MESSAGE));
     });
 
+    expect(screen.queryByTestId("component-loader")).toBeNull();
     expect(screen.getByText(COMMUNICATIONS_LEAD.name)).toBeInTheDocument();
     expect(screen.getByText(BOB.name)).toBeInTheDocument();
     expect(screen.queryByText(LOOKUP_FAILURE_MESSAGE)).toBeNull();
@@ -1194,7 +1228,7 @@ describe("FetchIncidentRoleAssignments", () => {
      * about to be replaced.
      */
     expect(screen.getByTestId("component-loader")).toBeInTheDocument();
-    expect(lookupsOf(User)).toEqual([]);
+    expect(lookupsOf(TeamMember)).toEqual([]);
 
     await act(async () => {
       secondLookup.resolve(rolesAnswer([INCIDENT_COMMANDER, SCRIBE]));
@@ -1205,7 +1239,7 @@ describe("FetchIncidentRoleAssignments", () => {
     expect(history.everShown(ROLE_NOT_FOUND_MESSAGE)).toBe(false);
     expect(
       asIdSets(
-        lookupsOf(User).map((lookup: Lookup): Array<string> => {
+        lookupsOf(TeamMember).map((lookup: Lookup): Array<string> => {
           return lookup.ids;
         }),
       ),

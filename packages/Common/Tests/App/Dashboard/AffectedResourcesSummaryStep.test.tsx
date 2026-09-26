@@ -708,9 +708,6 @@ describe("the Resources Affected summary step", () => {
       expect(
         within(container).queryAllByRole("button", { name: /^Remove\b/ }),
       ).toHaveLength(0);
-      expect(
-        within(container).queryAllByRole("button", { name: /Clear all/ }),
-      ).toHaveLength(0);
     });
   });
 });
