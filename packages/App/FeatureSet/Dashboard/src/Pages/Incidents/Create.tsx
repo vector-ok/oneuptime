@@ -25,6 +25,7 @@ import KubernetesCluster from "Common/Models/DatabaseModels/KubernetesCluster";
 import Monitor from "Common/Models/DatabaseModels/Monitor";
 import Service from "Common/Models/DatabaseModels/Service";
 import AffectedResourcesPicker, {
+  AffectedResourceType,
   isAffectedResourcesPayload,
 } from "../../Components/AffectedResources/AffectedResourcesPicker";
 import OnCallDutyPolicy from "Common/Models/DatabaseModels/OnCallDutyPolicy";
@@ -47,7 +48,6 @@ import FetchLabels from "../../Components/Label/FetchLabels";
 import FormValues from "Common/UI/Components/Forms/Types/FormValues";
 import FetchMonitorStatuses from "../../Components/MonitorStatus/FetchMonitorStatuses";
 import FetchOnCallDutyPolicies from "../../Components/OnCallPolicy/FetchOnCallPolicies";
-import FetchMonitors from "../../Components/Monitor/FetchMonitors";
 import FetchIncidentSeverities from "../../Components/IncidentSeverity/FetchIncidentSeverity";
 import FetchIncidentState from "../../Components/IncidentState/FetchIncidentState";
 import IncidentState from "Common/Models/DatabaseModels/IncidentState";
@@ -57,6 +57,7 @@ import { DropdownOption } from "Common/UI/Components/Dropdown/Dropdown";
 import IncidentRoleFormField, {
   RoleAssignment,
 } from "../../Components/Incident/IncidentRoleFormField";
+import FetchIncidentRoleAssignments from "../../Components/IncidentRole/FetchIncidentRoleAssignments";
 import { CustomElementProps } from "Common/UI/Components/Forms/Types/Field";
 import IncidentMember from "Common/Models/DatabaseModels/IncidentMember";
 import IncidentRole from "Common/Models/DatabaseModels/IncidentRole";
@@ -140,6 +141,21 @@ const toSeverityForMapping: ToSeverityForMappingFunction = (
     order: severity.order,
   };
 };
+
+/*
+ * Every resource type the "Resources Affected" step offers. The editor and
+ * the review step's read-only picker both take this list, so the summary
+ * names every type the editor lets the user pick.
+ */
+const AFFECTED_RESOURCE_TYPES: Array<AffectedResourceType> = [
+  "Monitor",
+  "Host",
+  "KubernetesCluster",
+  "DockerHost",
+  "PodmanHost",
+  "DatabaseServer",
+  "Service",
+];
 
 const IncidentCreate: FunctionComponent<
   PageComponentProps
@@ -828,15 +844,7 @@ const IncidentCreate: FunctionComponent<
                           values.databaseServers as Array<DatabaseServer>
                         }
                         services={values.services as Array<Service>}
-                        resourceTypes={[
-                          "Monitor",
-                          "Host",
-                          "KubernetesCluster",
-                          "DockerHost",
-                          "PodmanHost",
-                          "DatabaseServer",
-                          "Service",
-                        ]}
+                        resourceTypes={AFFECTED_RESOURCE_TYPES}
                         onChange={(payload: unknown) => {
                           elementProps.onChange?.(payload);
                         }}
@@ -868,112 +876,45 @@ const IncidentCreate: FunctionComponent<
                       });
                     }
                   },
+                  /*
+                   * The form holds bare IDs here. The read-only picker looks
+                   * their names up, so the review step names every resource
+                   * the user picked instead of counting them.
+                   */
                   getSummaryElement: (item: FormValues<Incident>) => {
-                    const monitorIds: Array<ObjectID> = [];
-                    if (Array.isArray(item.monitors)) {
-                      for (const monitor of item.monitors) {
-                        if (typeof monitor === "string") {
-                          monitorIds.push(new ObjectID(monitor));
-                          continue;
-                        }
-                        if (monitor instanceof ObjectID) {
-                          monitorIds.push(monitor);
-                          continue;
-                        }
-                        if (monitor instanceof Monitor) {
-                          monitorIds.push(
-                            new ObjectID(monitor._id?.toString() || ""),
-                          );
-                          continue;
-                        }
-                        const anyMonitor: { _id?: unknown } = monitor as {
-                          _id?: unknown;
-                        };
-                        if (anyMonitor._id) {
-                          monitorIds.push(new ObjectID(String(anyMonitor._id)));
-                        }
-                      }
-                    }
-                    const hostsCount: number = Array.isArray(item.hosts)
-                      ? item.hosts.length
-                      : 0;
-                    const clustersCount: number = Array.isArray(
+                    const hasResources: boolean = [
+                      item.monitors,
+                      item.hosts,
                       item.kubernetesClusters,
-                    )
-                      ? item.kubernetesClusters.length
-                      : 0;
-                    const dockerCount: number = Array.isArray(item.dockerHosts)
-                      ? item.dockerHosts.length
-                      : 0;
-                    const podmanCount: number = Array.isArray(item.podmanHosts)
-                      ? item.podmanHosts.length
-                      : 0;
-                    const databasesCount: number = Array.isArray(
+                      item.dockerHosts,
+                      item.podmanHosts,
                       item.databaseServers,
-                    )
-                      ? item.databaseServers.length
-                      : 0;
-                    const servicesCount: number = Array.isArray(item.services)
-                      ? item.services.length
-                      : 0;
-                    const totalCount: number =
-                      monitorIds.length +
-                      hostsCount +
-                      clustersCount +
-                      dockerCount +
-                      podmanCount +
-                      databasesCount +
-                      servicesCount;
-                    if (totalCount === 0) {
+                      item.services,
+                    ].some((resources: unknown): boolean => {
+                      return Array.isArray(resources) && resources.length > 0;
+                    });
+                    if (!hasResources) {
                       return <p>No resources affected by this incident.</p>;
                     }
-                    const otherCounts: Array<string> = [];
-                    if (hostsCount > 0) {
-                      otherCounts.push(
-                        `${hostsCount} host${hostsCount === 1 ? "" : "s"}`,
-                      );
-                    }
-                    if (clustersCount > 0) {
-                      otherCounts.push(
-                        `${clustersCount} Kubernetes cluster${clustersCount === 1 ? "" : "s"}`,
-                      );
-                    }
-                    if (dockerCount > 0) {
-                      otherCounts.push(
-                        `${dockerCount} Docker host${dockerCount === 1 ? "" : "s"}`,
-                      );
-                    }
-                    if (podmanCount > 0) {
-                      otherCounts.push(
-                        `${podmanCount} Podman host${podmanCount === 1 ? "" : "s"}`,
-                      );
-                    }
-                    if (databasesCount > 0) {
-                      otherCounts.push(
-                        `${databasesCount} database${databasesCount === 1 ? "" : "s"}`,
-                      );
-                    }
-                    if (servicesCount > 0) {
-                      otherCounts.push(
-                        `${servicesCount} service${servicesCount === 1 ? "" : "s"}`,
-                      );
-                    }
                     return (
-                      <div className="space-y-2">
-                        {monitorIds.length > 0 && (
-                          <div>
-                            <div className="text-xs uppercase tracking-wide text-gray-500">
-                              Monitors
-                            </div>
-                            <FetchMonitors monitorIds={monitorIds} />
-                          </div>
-                        )}
-                        {otherCounts.length > 0 && (
-                          <div className="text-sm text-gray-600">
-                            {otherCounts.join(", ")}
-                          </div>
-                        )}
-                      </div>
+                      <AffectedResourcesPicker
+                        readOnly={true}
+                        monitors={item.monitors as Array<Monitor>}
+                        hosts={item.hosts as Array<Host>}
+                        kubernetesClusters={
+                          item.kubernetesClusters as Array<KubernetesCluster>
+                        }
+                        dockerHosts={item.dockerHosts as Array<DockerHost>}
+                        podmanHosts={item.podmanHosts as Array<PodmanHost>}
+                        databaseServers={
+                          item.databaseServers as Array<DatabaseServer>
+                        }
+                        services={item.services as Array<Service>}
+                        resourceTypes={AFFECTED_RESOURCE_TYPES}
+                        onChange={() => {
+                          // Read-only: nothing to change.
+                        }}
+                      />
                     );
                   },
                 },
@@ -1074,20 +1015,10 @@ const IncidentCreate: FunctionComponent<
                     if (roleAssignmentsRef.current.length === 0) {
                       return <p>No incident roles assigned.</p>;
                     }
-                    const totalAssignments: number =
-                      roleAssignmentsRef.current.reduce(
-                        (acc: number, assignment: RoleAssignment) => {
-                          return acc + assignment.userIds.length;
-                        },
-                        0,
-                      );
                     return (
-                      <p>
-                        {totalAssignments} user
-                        {totalAssignments !== 1 ? "s" : ""} assigned to{" "}
-                        {roleAssignmentsRef.current.length} role
-                        {roleAssignmentsRef.current.length !== 1 ? "s" : ""}.
-                      </p>
+                      <FetchIncidentRoleAssignments
+                        assignments={roleAssignmentsRef.current}
+                      />
                     );
                   },
                 },
