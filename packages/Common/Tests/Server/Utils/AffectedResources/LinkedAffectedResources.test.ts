@@ -86,11 +86,12 @@ function resource(
   return { type, id, name };
 }
 
-let dashboardUrlLookup: jest.SpyInstance;
-
 beforeEach(() => {
-  // A fresh URL per call: URL.addRoute mutates, so a shared one would hide a missing copy.
-  dashboardUrlLookup = jest
+  /*
+   * For the services' own link builders. A fresh URL per call: URL.addRoute
+   * mutates, so a shared one would hide a missing copy.
+   */
+  jest
     .spyOn(DatabaseConfig, "getDashboardUrl")
     .mockImplementation(async (): Promise<URL> => {
       return URL.fromString(DASHBOARD);
@@ -536,6 +537,7 @@ describe("reading a record's relations", () => {
 
     const resources: Array<LinkedAffectedResource> =
       await LinkedAffectedResources.readForIncident({
+        service: IncidentService,
         projectId: PROJECT_ID,
         incidentId: RECORD_ID,
       });
@@ -594,6 +596,7 @@ describe("reading a record's relations", () => {
 
     const resources: Array<LinkedAffectedResource> =
       await LinkedAffectedResources.readForAlert({
+        service: AlertService,
         projectId: PROJECT_ID,
         alertId: RECORD_ID,
       });
@@ -624,6 +627,7 @@ describe("reading a record's relations", () => {
 
     const resources: Array<LinkedAffectedResource> =
       await LinkedAffectedResources.readForAlerts({
+        service: AlertService,
         projectId: PROJECT_ID,
         alertIds: [RECORD_ID, OTHER_RECORD_ID, RECORD_ID],
       });
@@ -646,6 +650,7 @@ describe("reading a record's relations", () => {
 
     expect(
       await LinkedAffectedResources.readForScheduledMaintenance({
+        service: ScheduledMaintenanceService,
         projectId: PROJECT_ID,
         scheduledMaintenanceId: RECORD_ID,
       }),
@@ -659,6 +664,7 @@ describe("reading a record's relations", () => {
 
     expect(
       await LinkedAffectedResources.readForIncidents({
+        service: IncidentService,
         projectId: PROJECT_ID,
         incidentIds: [],
       }),
@@ -740,77 +746,63 @@ describe("plain-text names", () => {
 });
 
 describe("feed markdown", () => {
-  function monitorLink(monitorId: string): string {
-    return `${DASHBOARD}/${PROJECT_ID.toString()}/monitors/${monitorId}`;
+  function getMarkdownLines(
+    resources: Array<LinkedAffectedResource>,
+  ): Array<string> {
+    return LinkedAffectedResources.getMarkdownLines({
+      dashboardUrl: URL.fromString(DASHBOARD),
+      projectId: PROJECT_ID,
+      resources,
+    });
   }
 
-  beforeEach(() => {
-    jest
-      .spyOn(MonitorService, "getMonitorLinkInDashboard")
-      .mockImplementation(
-        async (projectId: ObjectID, monitorId: ObjectID): Promise<URL> => {
-          return URL.fromString(
-            `${DASHBOARD}/${projectId.toString()}/monitors/${monitorId.toString()}`,
-          );
-        },
-      );
-  });
-
-  test("keeps the monitor bullet, labels the rest, and ends with the SLO", async () => {
+  test("keeps the monitor bullet, labels the rest, and ends with the SLO", () => {
     expect(
-      await LinkedAffectedResources.getMarkdownLines({
-        projectId: PROJECT_ID,
-        resources: [
-          resource(
-            LinkedAffectedResourceType.Monitor,
-            MONITOR_ID,
-            "checkout-web",
-          ),
-          resource(LinkedAffectedResourceType.Host, HOST_ID, "web-01"),
-          resource(
-            LinkedAffectedResourceType.KubernetesCluster,
-            CLUSTER_ID,
-            "prod-eu",
-          ),
-          resource(
-            LinkedAffectedResourceType.ServiceLevelObjective,
-            SLO_ID,
-            "Checkout availability",
-          ),
-        ],
-      }),
+      getMarkdownLines([
+        resource(
+          LinkedAffectedResourceType.ServiceLevelObjective,
+          SLO_ID,
+          "Checkout availability",
+        ),
+        resource(LinkedAffectedResourceType.Monitor, MONITOR_ID, "checkout-web"),
+        resource(LinkedAffectedResourceType.Host, HOST_ID, "web-01"),
+        resource(
+          LinkedAffectedResourceType.KubernetesCluster,
+          CLUSTER_ID,
+          "prod-eu",
+        ),
+      ]),
     ).toEqual([
-      `- [checkout-web](${monitorLink(MONITOR_ID)})`,
+      `- [checkout-web](${DASHBOARD}/${PROJECT_ID.toString()}/monitors/${MONITOR_ID})`,
       `- [Host web\\-01](${DASHBOARD}/${PROJECT_ID.toString()}/host/${HOST_ID})`,
       `- [Kubernetes Cluster prod\\-eu](${DASHBOARD}/${PROJECT_ID.toString()}/kubernetes/${CLUSTER_ID})`,
       `- [SLO Checkout availability](${DASHBOARD}/${PROJECT_ID.toString()}/slos/${SLO_ID})`,
     ]);
   });
 
-  test("a monitor-only list does not look up the dashboard URL", async () => {
-    await LinkedAffectedResources.getMarkdownLines({
-      projectId: PROJECT_ID,
-      resources: [
-        resource(LinkedAffectedResourceType.Monitor, MONITOR_ID, "api"),
-      ],
-    });
+  test("the monitor bullet is the one the created feeds always printed", async () => {
+    const [line]: Array<string> = getMarkdownLines([
+      resource(LinkedAffectedResourceType.Monitor, MONITOR_ID, "checkout-web"),
+    ]);
 
-    expect(dashboardUrlLookup).not.toHaveBeenCalled();
+    expect(line).toBe(
+      `- [checkout-web](${(
+        await MonitorService.getMonitorLinkInDashboard(
+          PROJECT_ID,
+          new ObjectID(MONITOR_ID),
+        )
+      ).toString()})`,
+    );
   });
 
-  test("a hostile host name cannot re-point its link, add an image or start a heading", async () => {
-    const [line]: Array<string> = await LinkedAffectedResources.getMarkdownLines(
-      {
-        projectId: PROJECT_ID,
-        resources: [
-          resource(
-            LinkedAffectedResourceType.Host,
-            HOST_ID,
-            "web](https://evil.example) ![p](https://tracker.example/p.gif)\n# owned",
-          ),
-        ],
-      },
-    );
+  test("a hostile host name cannot re-point its link, add an image or start a heading", () => {
+    const [line]: Array<string> = getMarkdownLines([
+      resource(
+        LinkedAffectedResourceType.Host,
+        HOST_ID,
+        "web](https://evil.example) ![p](https://tracker.example/p.gif)\n# owned",
+      ),
+    ]);
 
     expect(line).not.toContain("](https://evil.example)");
     expect(line).not.toContain("![p](");
@@ -820,24 +812,29 @@ describe("feed markdown", () => {
     );
   });
 
-  test("a nameless resource is still linked, by its kind", async () => {
+  test("a hostile SLO name is escaped as the SLO helper always has", () => {
+    const [line]: Array<string> = getMarkdownLines([
+      resource(
+        LinkedAffectedResourceType.ServiceLevelObjective,
+        SLO_ID,
+        "x](https://evil.example)",
+      ),
+    ]);
+
+    expect(line).not.toContain("](https://evil.example)");
+  });
+
+  test("a nameless resource is still linked, by its kind", () => {
     expect(
-      await LinkedAffectedResources.getMarkdownLines({
-        projectId: PROJECT_ID,
-        resources: [resource(LinkedAffectedResourceType.Service, SERVICE_ID, "")],
-      }),
+      getMarkdownLines([
+        resource(LinkedAffectedResourceType.Service, SERVICE_ID, ""),
+      ]),
     ).toEqual([
       `- [Service](${DASHBOARD}/${PROJECT_ID.toString()}/service/${SERVICE_ID})`,
     ]);
   });
 
-  test("nothing linked, no lines", async () => {
-    expect(
-      await LinkedAffectedResources.getMarkdownLines({
-        projectId: PROJECT_ID,
-        resources: [],
-      }),
-    ).toEqual([]);
-    expect(dashboardUrlLookup).not.toHaveBeenCalled();
+  test("nothing linked, no lines", () => {
+    expect(getMarkdownLines([])).toEqual([]);
   });
 });

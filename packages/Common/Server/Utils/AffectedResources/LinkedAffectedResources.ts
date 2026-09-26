@@ -1,13 +1,11 @@
-import DatabaseConfig from "../../DatabaseConfig";
-import AlertService from "../../Services/AlertService";
-import DatabaseService from "../../Services/DatabaseService";
-import IncidentService from "../../Services/IncidentService";
-import MonitorService from "../../Services/MonitorService";
-import ScheduledMaintenanceService from "../../Services/ScheduledMaintenanceService";
+import FindAllBy from "../../Types/Database/FindAllBy";
 import Query from "../../Types/Database/Query";
 import QueryHelper from "../../Types/Database/QueryHelper";
 import Select from "../../Types/Database/Select";
+import Alert from "../../../Models/DatabaseModels/Alert";
 import DatabaseBaseModel from "../../../Models/DatabaseModels/DatabaseBaseModel/DatabaseBaseModel";
+import Incident from "../../../Models/DatabaseModels/Incident";
+import ScheduledMaintenance from "../../../Models/DatabaseModels/ScheduledMaintenance";
 import URL from "../../../Types/API/URL";
 import ObjectID from "../../../Types/ObjectID";
 import { escapeMarkdownInline } from "../../../Utils/Markdown/MarkdownEscape";
@@ -36,6 +34,11 @@ import {
  * out. The write hooks reject cross-project links now, but rows saved before
  * that check existed may still hold one, and naming it would put another
  * project's resource into this project's feed, Slack and email.
+ *
+ * The caller hands over the service to read with, and the dashboard URL to
+ * link from. Those services import this module, and the owner-notification
+ * workers' tests replace them wholesale; importing them here would drag the
+ * whole service graph into every one of those suites.
  */
 
 export enum LinkedAffectedResourceType {
@@ -77,10 +80,6 @@ export interface LinkedAffectedResourceRelation {
  * routes are the ones each resource's own getXLinkInDashboard builds (a test
  * pins every one that exists); IoT fleets and network sites have none on the
  * server, so theirs follow the dashboard's RouteMap.
- *
- * Only strings: this table is read at module load, and the services these
- * resources belong to sit in an import graph that loops back here (see
- * AffectedResourceRelations).
  *
  * An alert has a single `monitor`; incidents and scheduled maintenance events
  * have `monitors`. Each record kind is read for the columns its model has.
@@ -194,6 +193,13 @@ type RecordWithRelations = {
   projectId?: ObjectID | string | undefined | null;
 } & Partial<Record<string, unknown>>;
 
+// The one method read here - IncidentService, AlertService and so on.
+export interface LinkedAffectedResourceReader<
+  TBaseModel extends DatabaseBaseModel,
+> {
+  findAllBy(findAllBy: FindAllBy<TBaseModel>): Promise<Array<TBaseModel>>;
+}
+
 function isSameProject(
   projectId: ObjectID | string | undefined | null,
   expected: ObjectID,
@@ -221,53 +227,63 @@ export default class LinkedAffectedResources {
   }
 
   public static async readForIncident(data: {
+    service: LinkedAffectedResourceReader<Incident>;
     projectId: ObjectID;
     incidentId: ObjectID;
   }): Promise<Array<LinkedAffectedResource>> {
     return await LinkedAffectedResources.readForIncidents({
+      service: data.service,
       projectId: data.projectId,
       incidentIds: [data.incidentId],
     });
   }
 
   public static async readForIncidents(data: {
+    service: LinkedAffectedResourceReader<Incident>;
     projectId: ObjectID;
     incidentIds: Array<ObjectID>;
   }): Promise<Array<LinkedAffectedResource>> {
     return await LinkedAffectedResources.read({
-      service: IncidentService,
+      service: data.service,
+      model: new Incident(),
       projectId: data.projectId,
       recordIds: data.incidentIds,
     });
   }
 
   public static async readForAlert(data: {
+    service: LinkedAffectedResourceReader<Alert>;
     projectId: ObjectID;
     alertId: ObjectID;
   }): Promise<Array<LinkedAffectedResource>> {
     return await LinkedAffectedResources.readForAlerts({
+      service: data.service,
       projectId: data.projectId,
       alertIds: [data.alertId],
     });
   }
 
   public static async readForAlerts(data: {
+    service: LinkedAffectedResourceReader<Alert>;
     projectId: ObjectID;
     alertIds: Array<ObjectID>;
   }): Promise<Array<LinkedAffectedResource>> {
     return await LinkedAffectedResources.read({
-      service: AlertService,
+      service: data.service,
+      model: new Alert(),
       projectId: data.projectId,
       recordIds: data.alertIds,
     });
   }
 
   public static async readForScheduledMaintenance(data: {
+    service: LinkedAffectedResourceReader<ScheduledMaintenance>;
     projectId: ObjectID;
     scheduledMaintenanceId: ObjectID;
   }): Promise<Array<LinkedAffectedResource>> {
     return await LinkedAffectedResources.read({
-      service: ScheduledMaintenanceService,
+      service: data.service,
+      model: new ScheduledMaintenance(),
       projectId: data.projectId,
       recordIds: [data.scheduledMaintenanceId],
     });
@@ -282,7 +298,8 @@ export default class LinkedAffectedResources {
    * would come back as 2,500 rows. Read one at a time, the rows add up.
    */
   private static async read<TBaseModel extends DatabaseBaseModel>(data: {
-    service: DatabaseService<TBaseModel>;
+    service: LinkedAffectedResourceReader<TBaseModel>;
+    model: TBaseModel;
     projectId: ObjectID;
     recordIds: Array<ObjectID>;
   }): Promise<Array<LinkedAffectedResource>> {
@@ -304,39 +321,41 @@ export default class LinkedAffectedResources {
       return [];
     }
 
-    const relations: Array<LinkedAffectedResourceRelation> =
-      LinkedAffectedResources.getRelations(data.service.getModel());
-
-    const rowsPerRelation: Array<Array<TBaseModel>> = await Promise.all(
-      relations.map(
-        (
-          relation: LinkedAffectedResourceRelation,
-        ): Promise<Array<TBaseModel>> => {
-          return data.service.findAllBy({
-            query: {
-              _id: QueryHelper.any(recordIds),
-              projectId: data.projectId,
-            } as unknown as Query<TBaseModel>,
-            select: {
-              _id: true,
-              projectId: true,
-              [relation.column]: {
+    const rowsPerRelation: Array<Array<TBaseModel> | undefined> =
+      await Promise.all(
+        LinkedAffectedResources.getRelations(data.model).map(
+          (
+            relation: LinkedAffectedResourceRelation,
+          ): Promise<Array<TBaseModel>> => {
+            return data.service.findAllBy({
+              query: {
+                _id: QueryHelper.any(recordIds),
+                projectId: data.projectId,
+              } as unknown as Query<TBaseModel>,
+              select: {
                 _id: true,
-                name: true,
                 projectId: true,
+                [relation.column]: {
+                  _id: true,
+                  name: true,
+                  projectId: true,
+                },
+              } as unknown as Select<TBaseModel>,
+              props: {
+                isRoot: true,
               },
-            } as unknown as Select<TBaseModel>,
-            props: {
-              isRoot: true,
-            },
-          });
-        },
-      ),
-    );
+            });
+          },
+        ),
+      );
 
     return LinkedAffectedResources.collect({
       projectId: data.projectId,
-      records: rowsPerRelation.flat() as unknown as Array<RecordWithRelations>,
+      records: rowsPerRelation.flatMap(
+        (rows: Array<TBaseModel> | undefined): Array<TBaseModel> => {
+          return rows || [];
+        },
+      ) as unknown as Array<RecordWithRelations>,
     });
   }
 
@@ -406,7 +425,7 @@ export default class LinkedAffectedResources {
   }
 
   /*
-   * The names, for plain-text surfaces (emails, SMS-style summaries).
+   * The names, for plain-text surfaces: emails and workspace summaries.
    *
    * `seriesSummary` is an alert's series identity - the pod or container a
    * grouped monitor raised it for (SeriesLabelDisplay.buildInlineSummary).
@@ -480,37 +499,24 @@ export default class LinkedAffectedResources {
    * The bullets under a feed item's "🌎 Resources Affected" header.
    *
    * A monitor keeps the bullet the created feeds have always printed,
-   * `- [<name>](<monitor link>)`. An SLO is `- [SLO <name>](<link>)` from
-   * getSloAffectedResourceMarkdownLines, as before. Every other resource
-   * follows the SLO's shape, `- [Host <name>](<link>)`, so the reader can
-   * tell a host from a cluster from a service.
+   * `- [<name>](<monitor link>)`, and an SLO keeps `- [SLO <name>](<link>)`
+   * from getSloAffectedResourceMarkdownLines. Every other resource follows
+   * the SLO's shape, `- [Host <name>](<link>)`, so the reader can tell a host
+   * from a cluster from a service.
    *
    * Those names are escaped: feeds render without safe mode and the same
    * markdown goes to Slack and Teams, and a host or cluster name can come
    * from an agent rather than from someone typing it.
-   *
-   * The dashboard URL is looked up only when something other than a
-   * monitor is listed; a monitor link comes from MonitorService.
    */
-  public static async getMarkdownLines(data: {
+  public static getMarkdownLines(data: {
+    dashboardUrl: URL;
     projectId: ObjectID;
     resources: Array<LinkedAffectedResource>;
-  }): Promise<Array<string>> {
+  }): Array<string> {
     const lines: Array<string> = [];
     const slos: Array<SloAffectedResourceLinkSubject> = [];
-    let dashboardUrl: URL | null = null;
 
     for (const resource of data.resources) {
-      if (resource.type === LinkedAffectedResourceType.Monitor) {
-        const monitorLink: URL = await MonitorService.getMonitorLinkInDashboard(
-          data.projectId,
-          new ObjectID(resource.id),
-        );
-
-        lines.push(`- [${resource.name}](${monitorLink.toString()})`);
-        continue;
-      }
-
       if (resource.type === LinkedAffectedResourceType.ServiceLevelObjective) {
         slos.push({
           _id: resource.id,
@@ -521,34 +527,35 @@ export default class LinkedAffectedResources {
         continue;
       }
 
-      if (!dashboardUrl) {
-        dashboardUrl = await DatabaseConfig.getDashboardUrl();
+      const link: string = LinkedAffectedResources.getDashboardUrl({
+        dashboardUrl: data.dashboardUrl,
+        projectId: data.projectId,
+        resource: resource,
+      }).toString();
+
+      if (resource.type === LinkedAffectedResourceType.Monitor) {
+        lines.push(`- [${resource.name}](${link})`);
+        continue;
       }
 
       const label: string = LinkedAffectedResources.getRelationForType(
         resource.type,
       ).label;
       const escapedName: string = escapeMarkdownInline(resource.name).trim();
-      const linkText: string = escapedName ? `${label} ${escapedName}` : label;
 
       lines.push(
-        `- [${linkText}](${LinkedAffectedResources.getDashboardUrl({
-          dashboardUrl: dashboardUrl,
-          projectId: data.projectId,
-          resource: resource,
-        }).toString()})`,
+        `- [${escapedName ? `${label} ${escapedName}` : label}](${link})`,
       );
     }
 
-    if (slos.length > 0) {
-      lines.push(
-        ...getSloAffectedResourceMarkdownLines({
-          dashboardUrl: dashboardUrl || (await DatabaseConfig.getDashboardUrl()),
-          projectId: data.projectId,
-          serviceLevelObjectives: slos,
-        }),
-      );
-    }
+    // SLOs are last in the table, so appending them keeps the order.
+    lines.push(
+      ...getSloAffectedResourceMarkdownLines({
+        dashboardUrl: data.dashboardUrl,
+        projectId: data.projectId,
+        serviceLevelObjectives: slos,
+      }),
+    );
 
     return lines;
   }
